@@ -91,7 +91,7 @@ public final class RestCrudController implements ApplicationContextAware {
 				throw new Exception("DOMAIN NOT EXISTS: " + domain);
 			}
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			WebDao<?> dao = (WebDao<?>) new Dao(jdbcTemplate, t);
+			WebDao<?> dao = new WebDao(jdbcTemplate, t);
 			repositories.put(domain, dao);
 			return dao;
 		}

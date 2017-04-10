@@ -308,10 +308,10 @@ public final class RestCrudController implements ApplicationContextAware {
 	}
 
 	///////////////////
-	/// CRUD/0
+	/// CRUDS
 	///////////////////
 	@ResponseBody
-	@RequestMapping(path = "crud/{domain}/0", method = RequestMethod.DELETE)
+	@RequestMapping(path = "cruds/batch/{domain}", method = RequestMethod.DELETE)
 	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
@@ -321,7 +321,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			r.status = 200;
 			r.path = request.getRequestURI();
 			r.error = "SUCCESS";
-			r.message = "DELETE DONE";
+			r.message = "BATCH DELETE DONE";
 			//
 			WebUtils.setResponse4IframeAndRest(response);
 			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
@@ -349,7 +349,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	}
 
 	@ResponseBody
-	@RequestMapping(path = "crud/{domain}/0", method = RequestMethod.GET)
+	@RequestMapping(path = "cruds/single/{domain}", method = RequestMethod.GET)
 	public RestResult findOne(@PathVariable String domain,
 			@RequestParam(value = "filters", defaultValue = "") String filters,
 			@RequestParam(value = "order", defaultValue = "") String order, HttpServletRequest request,
@@ -388,9 +388,6 @@ public final class RestCrudController implements ApplicationContextAware {
 		}
 	}
 
-	///////////////////
-	/// CRUDS
-	///////////////////
 	@ResponseBody
 	@RequestMapping(path = "cruds/check-null/{domain}", method = RequestMethod.PUT)
 	public RestResult createCheckNull(@PathVariable String domain, HttpServletRequest request,

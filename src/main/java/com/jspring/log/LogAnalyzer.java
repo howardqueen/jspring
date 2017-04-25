@@ -67,18 +67,18 @@ public final class LogAnalyzer<T> {
 	public final IEvent<T> actionReadItem = Event.newInstansce();
 
 	public StatResult readFile(String filename) {
-		log.debug(" ++ Read %s ...", filename);
+		log.info(String.format(" ++ Read %s ...", filename));
 		MyConsoleThread t = new MyConsoleThread();
 		t.perform(Files.newReader(filename), null);
-		log.debug(" -- Success %,d, failed %,d.", t.result.succLines, t.result.failedLines);
+		log.info(String.format(" -- Success %,d, failed %,d.", t.result.succLines, t.result.failedLines));
 		return t.result;
 	}
 
 	public StatResult readProcess(String rumtimeCommand) {
-		log.debug(" ++ %s", rumtimeCommand);
+		log.info(String.format(" ++ %s", rumtimeCommand));
 		MyConsoleThread t = new MyConsoleThread();
 		Processes.execute(rumtimeCommand, t);
-		log.debug(" -- Success %,d, failed %,d.", t.result.succLines, t.result.failedLines);
+		log.info(String.format(" -- Success %,d, failed %,d.", t.result.succLines, t.result.failedLines));
 		return t.result;
 	}
 

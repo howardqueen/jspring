@@ -48,6 +48,12 @@
 			<scope>compile</scope>
 			<optional>true</optional>
 		</dependency>
+		<!-- APP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<version>1.4.3.RELEASE</version>
+		</dependency>
 		<!-- WEB -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

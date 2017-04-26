@@ -13,8 +13,7 @@ public final class UserAgent {
 		}
 
 		public boolean isUnknown() {
-			return nl.bitwalker.useragentutils.OperatingSystem.UNKNOWN
-					.equals(value);
+			return nl.bitwalker.useragentutils.OperatingSystem.UNKNOWN.equals(value);
 		}
 
 		public boolean isMobileDevice() {
@@ -39,22 +38,18 @@ public final class UserAgent {
 
 		@Override
 		public String toString() {
+			// MICROSOFT WINDOWS COMPUTER
 			if (value.isMobileDevice()) {
-				return value.getGroup().name() + " "
-						+ value.getManufacturer().name() + " [Mobile]"
+				return value.getManufacturer().name() + "_" + value.getGroup().name() + "_M_"
 						+ value.getDeviceType().name();
 			}
-			return value.getGroup().name() + " "
-					+ value.getManufacturer().name() + " "
-					+ value.getDeviceType().name();
+			return value.getManufacturer().name() + "_" + value.getGroup().name() + "_" + value.getDeviceType().name();
 		}
 
 	}
 
 	public static OS valueOfOS(String uaString) {
-		return new OS(
-				nl.bitwalker.useragentutils.OperatingSystem
-						.parseUserAgentString(uaString));
+		return new OS(nl.bitwalker.useragentutils.OperatingSystem.parseUserAgentString(uaString));
 	}
 
 	// /////////////////////////////////////////
@@ -93,26 +88,21 @@ public final class UserAgent {
 
 		@Override
 		public String toString() {
-			return value.getGroup().name() + " "
-					+ value.getManufacturer().name() + " "
-					+ value.getBrowserType().name() + " "
-					+ value.getRenderingEngine().name();
+			// MOZILLA FIREFOX WEB_BROWSER GECKO
+			return value.getManufacturer().name() + "_" + value.getGroup().name() + "_" + value.getBrowserType().name()
+					+ "_" + value.getRenderingEngine().name();
 		}
 	}
 
 	public static Browser valueOfBrowser(String uaString) {
-		return new Browser(
-				nl.bitwalker.useragentutils.Browser
-						.parseUserAgentString(uaString));
+		return new Browser(nl.bitwalker.useragentutils.Browser.parseUserAgentString(uaString));
 	}
 
 	// /////////////////////////////////////////
 	//
 	// /////////////////////////////////////////
 	public static UserAgent valueOf(String uaString) {
-		return new UserAgent(
-				nl.bitwalker.useragentutils.UserAgent
-						.parseUserAgentString(uaString));
+		return new UserAgent(nl.bitwalker.useragentutils.UserAgent.parseUserAgentString(uaString));
 	}
 
 	private final OS os;
@@ -122,8 +112,7 @@ public final class UserAgent {
 	private UserAgent(nl.bitwalker.useragentutils.UserAgent value) {
 		os = new OS(value.getOperatingSystem());
 		browser = new Browser(value.getBrowser());
-		browserVersion = (null == value.getBrowserVersion() ? "unknown" : value
-				.getBrowserVersion().getVersion());
+		browserVersion = (null == value.getBrowserVersion() ? "0" : value.getBrowserVersion().getVersion());
 	}
 
 	public OS getOS() {

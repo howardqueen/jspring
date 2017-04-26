@@ -733,4 +733,15 @@ public class Dao<T> {
 		return delete(String.valueOf(idValue));
 	}
 
+	//////////////////
+	///
+	//////////////////
+	public void loadData(String loadCsvFile, boolean isLinuxOrWindows) {
+		String sql = "LOAD DATA INFILE \"" + (isLinuxOrWindows ? loadCsvFile : loadCsvFile.substring(1))
+				+ "\" INTO TABLE `" + getTableName() + "` character set utf8"
+				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '"
+				+ (isLinuxOrWindows ? "\n" : "\r\n") + "';";
+		jdbcTemplate.execute(sql);
+	}
+
 }

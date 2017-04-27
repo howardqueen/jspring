@@ -395,14 +395,14 @@ public class AccessLogUrl {
 			for (int m = i - 1; m >= 0; m--) {
 				char ca = r.path.charAt(m);
 				if (ca == '/') {
-					activeIndex = ca;
+					activeIndex = m;
 					continue;
 				}
 				if (ca < 42 || ca > 57) {
 					break;
 				}
 			}
-			//按常规处理
+			// 按常规处理
 			if (activeIndex == r.path.length() - 1) {
 				r.filename = "";
 			} else {

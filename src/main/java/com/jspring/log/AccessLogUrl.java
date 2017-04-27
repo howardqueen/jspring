@@ -389,11 +389,26 @@ public class AccessLogUrl {
 		if (i == 0) {
 			r.filename = r.path.substring(1);
 			r.path = "/";
-		} else if (i == r.path.length() - 1) {
-			r.filename = "";
 		} else {
-			r.filename = r.path.substring(i + 1);
-			r.path = r.path.substring(0, i + 1);
+			// 为了保持目录的简洁可聚合，查询目录中的动态部分，作为文件名处理，从目录中排除
+			int activeIndex = i;
+			for (int m = i - 1; m >= 0; m--) {
+				char ca = r.path.charAt(m);
+				if (ca == '/') {
+					activeIndex = ca;
+					continue;
+				}
+				if (ca < 42 || ca > 57) {
+					break;
+				}
+			}
+			//按常规处理
+			if (activeIndex == r.path.length() - 1) {
+				r.filename = "";
+			} else {
+				r.filename = r.path.substring(activeIndex + 1);
+				r.path = r.path.substring(0, activeIndex + 1);
+			}
 		}
 		//
 		if ((i = r.filename.lastIndexOf('.')) >= 0) {

@@ -708,6 +708,7 @@ public class Dao<T> {
 			sb.append(dw.value);
 			sb.append('"');
 		}
+		log.info("DELETE ALL: " + sb.toString());
 		return jdbcTemplate.update(sb.toString());
 	}
 
@@ -736,11 +737,12 @@ public class Dao<T> {
 	//////////////////
 	///
 	//////////////////
-	public void loadData(String loadCsvFile, boolean isLinuxOrWindows) {
-		String sql = "LOAD DATA INFILE \"" + (isLinuxOrWindows ? loadCsvFile : loadCsvFile.substring(1))
+	public void loadData(String csvFilename, boolean isLinuxOrWindows) {
+		String sql = "LOAD DATA INFILE \"" + (isLinuxOrWindows ? csvFilename : csvFilename.substring(1))
 				+ "\" INTO TABLE `" + getTableName() + "` character set utf8"
 				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '"
 				+ (isLinuxOrWindows ? "\n" : "\r\n") + "';";
+		log.info("LOAD DATA: " + sql);
 		jdbcTemplate.execute(sql);
 	}
 

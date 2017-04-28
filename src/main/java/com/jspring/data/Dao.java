@@ -742,7 +742,7 @@ public class Dao<T> {
 				+ "\" INTO TABLE `" + getTableName() + "` character set utf8"
 				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '"
 				+ (isLinuxOrWindows ? "\n" : "\r\n") + "';";
-		log.info("LOAD DATA: " + sql);
+		log.info("LOAD DATA: " + sql.replace("\n", "\\n").replace("\r", "\\r"));
 		jdbcTemplate.execute(sql);
 	}
 

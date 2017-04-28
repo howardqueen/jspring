@@ -48,7 +48,7 @@ public class AccessLogParser implements ILogParser<AccessLogItem> {
 		// protocal
 		j = line.indexOf('\"', i + 1);
 		String protocal = line.substring(i + 1, j);
-		r.url = AccessLogUrl.newInstance(protocal, null, url, null);// ;
+		r.url = AccessLogUrl.newInstance(protocal, null, url);// ;
 		// size
 		i = line.indexOf(' ', j + 1) + 1;
 		j = line.indexOf(' ', i + 1);
@@ -59,7 +59,7 @@ public class AccessLogParser implements ILogParser<AccessLogItem> {
 		// pre
 		i = line.indexOf('\"', i + 1) + 1;
 		j = line.indexOf('\"', i);
-		r.referrer = AccessLogUrl.newInstance(line.substring(i, j), null);
+		r.referrer = AccessLogUrl.newInstance(line.substring(i, j));
 		// ua
 		i = line.indexOf('\"', j + 1) + 1;
 		j = line.indexOf('\"', i);

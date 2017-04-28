@@ -14,6 +14,16 @@ public class AccessLogParser implements ILogParser<AccessLogItem> {
 		}
 	}
 
+	private String[] shortPaths;
+
+	public void setShortPaths(String[] value) {
+		shortPaths = value;
+	}
+
+	public String[] getShortPaths() {
+		return shortPaths;
+	}
+
 	public AccessLogItem parseLine(String line) {
 		/*
 		 * ip - - [date:time +timezone] timespan "method url protocal" size
@@ -48,7 +58,7 @@ public class AccessLogParser implements ILogParser<AccessLogItem> {
 		// protocal
 		j = line.indexOf('\"', i + 1);
 		String protocal = line.substring(i + 1, j);
-		r.url = AccessLogUrl.newInstance(protocal, null, url);// ;
+		r.url = AccessLogUrl.newInstance(protocal, null, url, shortPaths);// ;
 		// size
 		i = line.indexOf(' ', j + 1) + 1;
 		j = line.indexOf(' ', i + 1);
@@ -59,7 +69,7 @@ public class AccessLogParser implements ILogParser<AccessLogItem> {
 		// pre
 		i = line.indexOf('\"', i + 1) + 1;
 		j = line.indexOf('\"', i);
-		r.referrer = AccessLogUrl.newInstance(line.substring(i, j));
+		r.referrer = AccessLogUrl.newInstance(line.substring(i, j), shortPaths);
 		// ua
 		i = line.indexOf('\"', j + 1) + 1;
 		j = line.indexOf('\"', i);

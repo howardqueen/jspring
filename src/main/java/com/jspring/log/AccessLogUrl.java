@@ -1,7 +1,5 @@
 package com.jspring.log;
 
-import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
-
 import com.jspring.Strings;
 
 public class AccessLogUrl {

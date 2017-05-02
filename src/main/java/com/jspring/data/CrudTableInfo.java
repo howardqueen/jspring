@@ -18,4 +18,5 @@ public class CrudTableInfo {
 	public boolean updateCheckNull = false;
 	//
 	public boolean exportable = false;
+	public String partitionDateColumn = "";
 }

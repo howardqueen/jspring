@@ -23,6 +23,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
+import com.jspring.Environment;
+import com.jspring.Exceptions;
 import com.jspring.Strings;
 import com.jspring.data.DaoWhere.Operators;
 import com.jspring.date.DateTime;
@@ -62,7 +64,240 @@ public class Dao<T> {
 	//////////////////
 	///
 	//////////////////
+	protected String _oriTableName = null;
+	protected Field _partitionDateField = null;
 
+	protected String getTableName(DaoWhere[] wheres) {
+		if (null == _oriTableName) {
+			Table table = domainClass.getAnnotation(Table.class);
+			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
+					: table.name();
+		}
+		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+			return _oriTableName;
+		}
+		for (DaoWhere w : wheres) {
+			if (w.column.equals(getCrudView().partitionDateColumn)) {
+				return _oriTableName + "_" + DateTime.valueOf(w.value).toShortDateString();
+			}
+		}
+		throw Exceptions
+				.newInstance("[PartitionDateColumn]" + getCrudView().partitionDateColumn + " cannot be null or empty.");
+	}
+
+	protected String getTableName(T entity)
+			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		if (null == _oriTableName) {
+			Table table = domainClass.getAnnotation(Table.class);
+			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
+					: table.name();
+		}
+		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+			return _oriTableName;
+		}
+		if (null == _partitionDateField) {
+			_partitionDateField = domainClass.getField(getCrudView().partitionDateColumn);
+		}
+		DateTime partitionDate = (DateTime) _partitionDateField.get(entity);
+		if (null == partitionDate) {
+			throw Exceptions.newNullArgumentException("entity." + getCrudView().partitionDateColumn);
+		}
+		return _oriTableName + "_" + partitionDate.toShortDateString();
+	}
+
+	protected String getTableName(DateTime partitionDate) {
+		if (null == _oriTableName) {
+			Table table = domainClass.getAnnotation(Table.class);
+			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
+					: table.name();
+		}
+		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+			return _oriTableName;
+		}
+		if (null == partitionDate) {
+			throw Exceptions.newNullArgumentException("partitionDate");
+		}
+		return _oriTableName + "_" + partitionDate.toShortDateString();
+	}
+
+	public DateTime getPartitionDate(T entity)
+			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+			return null;
+		}
+		if (null == _partitionDateField) {
+			_partitionDateField = domainClass.getField(getCrudView().partitionDateColumn);
+		}
+		return (DateTime) _partitionDateField.get(entity);
+	}
+
+	private boolean _idColumnInit = false;
+	private Field _idColumn = null;
+
+	protected Field getIdColumn() {
+		if (_idColumnInit) {
+			return _idColumn;
+		}
+		_idColumnInit = true;
+		for (Field f : domainClass.getFields()) {
+			Id id = f.getAnnotation(Id.class);
+			if (null != id) {
+				_idColumn = f;
+				break;
+			}
+		}
+		if (null == _idColumn) {
+			_idColumn = domainClass.getFields()[0];
+			log.info(domainClass.getName() + ": [Id-Column]" + _idColumn.getName());
+		}
+		return _idColumn;
+	}
+
+	private boolean _idColumnNameInit = false;
+	private String _idColumnName = null;
+
+	protected String getIdColumnName() {
+		if (_idColumnNameInit) {
+			return _idColumnName;
+		}
+		_idColumnNameInit = true;
+		if (null == getIdColumn()) {
+			return _idColumnName;
+		}
+		_idColumnName = getColumnName(getIdColumn());
+		return _idColumnName;
+	}
+
+	private boolean _isIdGenerateIdentityInit = false;
+	private boolean _isIdGenerateIdentity = false;
+
+	public boolean isIdGenerateIdentity() {
+		if (_isIdGenerateIdentityInit) {
+			return _isIdGenerateIdentity;
+		}
+		_isIdGenerateIdentityInit = true;
+		if (null == getIdColumn()) {
+			return _isIdGenerateIdentity;
+		}
+		GeneratedValue v = getIdColumn().getAnnotation(GeneratedValue.class);
+		if (null != v && v.strategy() == GenerationType.IDENTITY) {
+			_isIdGenerateIdentity = true;
+			log.info(domainClass.getName() + ": [Id-Generate-Identity]" + _idColumn.getName());
+		}
+		return _isIdGenerateIdentity;
+	}
+
+	//////////////////
+	/// CRUD VIEW
+	//////////////////
+	public Dao(JdbcTemplate jdbcTemplate, Class<T> domainClass) {
+		this.jdbcTemplate = jdbcTemplate;
+		this.domainClass = domainClass;
+	}
+
+	//////////////////
+	/// CRUD VIEW
+	//////////////////
+	private String _selectSQL;
+
+	protected String getSelectSQL() {
+		if (null == _selectSQL) {
+			StringBuilder sb = new StringBuilder("SELECT ");
+			boolean isFirst = true;
+			for (Field f : domainClass.getFields()) {
+				if (isFirst) {
+					isFirst = false;
+				} else {
+					sb.append(',');
+					sb.append(' ');
+				}
+				sb.append(getColumnSelectName(f));
+			}
+			sb.append(" FROM ");
+			_selectSQL = sb.toString();
+		}
+		return _selectSQL;
+	}
+
+	protected String getColumnName(String fieldName) {
+		try {
+			return getColumnName(domainClass.getField(fieldName));
+		} catch (NoSuchFieldException | SecurityException e) {
+			throw new RuntimeException(e.getClass().getName() + ":" + e.getMessage());
+		}
+	}
+
+	//////////////////
+	/// CRUD VIEW
+	//////////////////
+	private CrudTableInfo _crudView;
+
+	public CrudTableInfo getCrudView() {
+		if (null != _crudView) {
+			return _crudView;
+		}
+		_crudView = new CrudTableInfo();
+		CrudTable cv = domainClass.getAnnotation(CrudTable.class);
+		if (null != cv) {
+			_crudView.title = cv.title();
+			_crudView.width = cv.width();
+			_crudView.height = cv.height();
+			_crudView.createable = cv.createable();
+			_crudView.createCheckNull = cv.createCheckNull();
+			_crudView.updateable = cv.updateable();
+			_crudView.updateCheckNull = cv.updateCheckNull();
+			_crudView.exportable = cv.exportable();
+			_crudView.partitionDateColumn = cv.partitionDateColumn();
+		}
+		if (Strings.isNullOrEmpty(_crudView.title)) {
+			_crudView.title = domainClass.getSimpleName();
+		}
+		//
+		_crudView.columns = new CrudColumnInfo[domainClass.getFields().length];
+		int i = 0;
+		for (Field f : domainClass.getFields()) {
+			CrudColumnInfo v = new CrudColumnInfo();
+			v.field = f.getName();
+			v.fieldType = f.getType().getSimpleName();
+			CrudColumn c = f.getAnnotation(CrudColumn.class);
+			if (null != c) {
+				v.title = c.title();
+				v.header = c.header();
+				v.sortable = c.sortable();
+				v.filter = c.filter().shortName;
+				v.width = c.width();
+				v.height = c.height();
+				v.createable = c.createable();
+				v.required = c.required();
+				v.updateable = c.updateable();
+				v.readonly = c.readonly();
+			}
+			if (Strings.isNullOrEmpty(v.title)) {
+				v.title = v.field;
+			}
+			_crudView.columns[i++] = v;
+		}
+		return _crudView;
+	}
+
+	//////////////////
+	///
+	//////////////////
+	public List<T> findAllBySQL(String sql, Object... args) {
+		return findAll(domainClass, sql, args);
+	}
+
+	public T findOneBySQL(String sql, Object... args) {
+		return findOne(domainClass, sql, args);
+	}
+
+	public int execute(String sql, Object... args) {
+		return jdbcTemplate.update(sql, args);
+	}
+
+	//////////////////
+	///
+	//////////////////
 	public int countAll(String sql, Object... args) {
 		log.debug("COUNT_ALL: " + sql);
 		return jdbcTemplate.queryForObject(sql, args, Long.class).intValue();
@@ -150,189 +385,6 @@ public class Dao<T> {
 		return list.size() > 0 ? list.get(0) : null;
 	}
 
-	public Dao(JdbcTemplate jdbcTemplate, Class<T> domainClass) {
-		this.jdbcTemplate = jdbcTemplate;
-		this.domainClass = domainClass;
-	}
-
-	//////////////////
-	///
-	//////////////////
-	public List<T> findAll(String sql, Object... args) {
-		return findAll(domainClass, sql, args);
-	}
-
-	public T findOne(String sql, Object... args) {
-		return findOne(domainClass, sql, args);
-	}
-
-	public int execute(String sql, Object... args) {
-		return jdbcTemplate.update(sql, args);
-	}
-
-	//////////////////
-	///
-	//////////////////
-	private String _tableName = null;
-
-	protected String getTableName() {
-		if (null == _tableName) {
-			Table table = domainClass.getAnnotation(Table.class);
-			_tableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
-					: table.name();
-		}
-		return _tableName;
-	}
-
-	private boolean _idColumnInit = false;
-	private Field _idColumn = null;
-
-	protected Field getIdColumn() {
-		if (_idColumnInit) {
-			return _idColumn;
-		}
-		_idColumnInit = true;
-		for (Field f : domainClass.getFields()) {
-			Id id = f.getAnnotation(Id.class);
-			if (null != id) {
-				_idColumn = f;
-				break;
-			}
-		}
-		if (null == _idColumn) {
-			_idColumn = domainClass.getFields()[0];
-			log.info(domainClass.getName() + ": [Id-Column]" + _idColumn.getName());
-		}
-		return _idColumn;
-	}
-
-	private boolean _idColumnNameInit = false;
-	private String _idColumnName = null;
-
-	protected String getIdColumnName() {
-		if (_idColumnNameInit) {
-			return _idColumnName;
-		}
-		_idColumnNameInit = true;
-		if (null == getIdColumn()) {
-			return _idColumnName;
-		}
-		_idColumnName = getColumnName(getIdColumn());
-		return _idColumnName;
-	}
-
-	private boolean _isIdGenerateIdentityInit = false;
-	private boolean _isIdGenerateIdentity = false;
-
-	public boolean isIdGenerateIdentity() {
-		if (_isIdGenerateIdentityInit) {
-			return _isIdGenerateIdentity;
-		}
-		_isIdGenerateIdentityInit = true;
-		if (null == getIdColumn()) {
-			return _isIdGenerateIdentity;
-		}
-		GeneratedValue v = getIdColumn().getAnnotation(GeneratedValue.class);
-		if (null != v && v.strategy() == GenerationType.IDENTITY) {
-			_isIdGenerateIdentity = true;
-			log.info(domainClass.getName() + ": [Id-Generate-Identity]" + _idColumn.getName());
-		}
-		return _isIdGenerateIdentity;
-	}
-
-	private String _selectSQL;
-
-	protected String getSelectSQL() {
-		if (null == _selectSQL) {
-			StringBuilder sb = new StringBuilder("SELECT ");
-			boolean isFirst = true;
-			for (Field f : domainClass.getFields()) {
-				if (isFirst) {
-					isFirst = false;
-				} else {
-					sb.append(',');
-					sb.append(' ');
-				}
-				sb.append(getColumnSelectName(f));
-			}
-			sb.append(" FROM ");
-			sb.append(getTableName());
-			_selectSQL = sb.toString();
-		}
-		return _selectSQL;
-	}
-
-	private String _countSQL;
-
-	protected String getCountSQL() {
-		if (null == _countSQL) {
-			StringBuilder sb = new StringBuilder("SELECT COUNT(0) FROM ");
-			sb.append(getTableName());
-			_countSQL = sb.toString();
-		}
-		return _countSQL;
-	}
-
-	protected String getColumnName(String fieldName) {
-		try {
-			return getColumnName(domainClass.getField(fieldName));
-		} catch (NoSuchFieldException | SecurityException e) {
-			throw new RuntimeException(e.getClass().getName() + ":" + e.getMessage());
-		}
-	}
-
-	//////////////////
-	/// CRUD VIEW
-	//////////////////
-	private CrudTableInfo _crudView;
-
-	public CrudTableInfo getCrudView() {
-		if (null != _crudView) {
-			return _crudView;
-		}
-		_crudView = new CrudTableInfo();
-		CrudTable cv = domainClass.getAnnotation(CrudTable.class);
-		if (null != cv) {
-			_crudView.title = cv.title();
-			_crudView.width = cv.width();
-			_crudView.height = cv.height();
-			_crudView.createable = cv.createable();
-			_crudView.createCheckNull = cv.createCheckNull();
-			_crudView.updateable = cv.updateable();
-			_crudView.updateCheckNull = cv.updateCheckNull();
-			_crudView.exportable = cv.exportable();
-		}
-		if (Strings.isNullOrEmpty(_crudView.title)) {
-			_crudView.title = domainClass.getSimpleName();
-		}
-		//
-		_crudView.columns = new CrudColumnInfo[domainClass.getFields().length];
-		int i = 0;
-		for (Field f : domainClass.getFields()) {
-			CrudColumnInfo v = new CrudColumnInfo();
-			v.field = f.getName();
-			v.fieldType = f.getType().getSimpleName();
-			CrudColumn c = f.getAnnotation(CrudColumn.class);
-			if (null != c) {
-				v.title = c.title();
-				v.header = c.header();
-				v.sortable = c.sortable();
-				v.filter = c.filter().shortName;
-				v.width = c.width();
-				v.height = c.height();
-				v.createable = c.createable();
-				v.required = c.required();
-				v.updateable = c.updateable();
-				v.readonly = c.readonly();
-			}
-			if (Strings.isNullOrEmpty(v.title)) {
-				v.title = v.field;
-			}
-			_crudView.columns[i++] = v;
-		}
-		return _crudView;
-	}
-
 	//////////////////
 	///
 	//////////////////
@@ -351,7 +403,7 @@ public class Dao<T> {
 		if (size <= 0) {
 			size = 1;
 		}
-		StringBuilder sb = new StringBuilder(getSelectSQL());
+		StringBuilder sb = new StringBuilder(getSelectSQL() + getTableName(wheres));
 		if (null != wheres && wheres.length > 0) {
 			sb.append(" WHERE ");
 			boolean isAppend = false;
@@ -395,9 +447,9 @@ public class Dao<T> {
 
 	public int countAll(DaoWhere[] wheres) {
 		if (null == wheres || wheres.length == 0) {
-			return countAll(getCountSQL());
+			return countAll("SELECT COUNT(0) FROM " + getTableName(wheres));
 		}
-		StringBuilder sb = new StringBuilder(getCountSQL());
+		StringBuilder sb = new StringBuilder("SELECT COUNT(0) FROM " + getTableName(wheres));
 		sb.append(" WHERE ");
 		boolean isAppend = false;
 		for (DaoWhere dw : wheres) {
@@ -421,7 +473,7 @@ public class Dao<T> {
 	///
 	//////////////////
 	public T findOne(DaoWhere[] wheres, DaoOrder[] orders) {
-		StringBuilder sb = new StringBuilder(getSelectSQL());
+		StringBuilder sb = new StringBuilder(getSelectSQL() + getTableName(wheres));
 		if (null == wheres || wheres.length == 0) {
 			throw new RuntimeException("Can't find one by call findOne(null)");
 		}
@@ -466,8 +518,8 @@ public class Dao<T> {
 		return findOne(wheres, null);
 	}
 
-	public T findOne(String idValue) {
-		StringBuilder sb = new StringBuilder(getSelectSQL());
+	public T findOne(String idValue, DateTime partitionDate) {
+		StringBuilder sb = new StringBuilder(getSelectSQL() + getTableName(partitionDate));
 		sb.append(" WHERE ");
 		sb.append(getIdColumnName());
 		sb.append(' ');
@@ -481,12 +533,12 @@ public class Dao<T> {
 		return r.size() > 0 ? r.get(0) : null;
 	}
 
-	public T findOne(Integer idValue) {
-		return findOne(String.valueOf(idValue));
+	public T findOne(Integer idValue, DateTime partitionDate) {
+		return findOne(String.valueOf(idValue), partitionDate);
 	}
 
-	public T findOne(Long idValue) {
-		return findOne(String.valueOf(idValue));
+	public T findOne(Long idValue, DateTime partitionDate) {
+		return findOne(String.valueOf(idValue), partitionDate);
 	}
 
 	//////////////////
@@ -495,7 +547,7 @@ public class Dao<T> {
 	public T insertAndGet(T entity) {
 		try {
 			final StringBuilder sb = new StringBuilder("INSERT INTO ");
-			sb.append(getTableName());
+			sb.append(getTableName(entity));
 			sb.append(" (");
 			boolean isAppend = false;
 			for (Field f : domainClass.getFields()) {
@@ -537,13 +589,14 @@ public class Dao<T> {
 				if (c <= 0) {
 					return null;
 				}
-				return findOne(String.valueOf(keyHolder.getKey()));
+				return findOne(String.valueOf(keyHolder.getKey()), getPartitionDate(entity));
 			}
 			int c = jdbcTemplate.update(sb.toString());
 			if (c <= 0) {
 				return null;
 			}
-			return findOne(String.valueOf(domainClass.getField(getIdColumnName()).get(entity)));
+			return findOne(String.valueOf(domainClass.getField(getIdColumnName()).get(entity)),
+					getPartitionDate(entity));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -552,7 +605,7 @@ public class Dao<T> {
 	public int insert(T entity) {
 		try {
 			final StringBuilder sb = new StringBuilder("INSERT INTO ");
-			sb.append(getTableName());
+			sb.append(getTableName(entity));
 			sb.append(" (");
 			boolean isAppend = false;
 			for (Field f : domainClass.getFields()) {
@@ -594,7 +647,7 @@ public class Dao<T> {
 	public T updateAndGet(T entity, String idValue) {
 		try {
 			final StringBuilder sb = new StringBuilder("UPDATE ");
-			sb.append(getTableName());
+			sb.append(getTableName(entity));
 			sb.append(" SET ");
 			boolean isAppend = false;
 			for (Field f : domainClass.getFields()) {
@@ -625,7 +678,8 @@ public class Dao<T> {
 			if (c <= 0) {
 				return null;
 			}
-			return findOne(String.valueOf(domainClass.getField(getIdColumnName()).get(entity)));
+			return findOne(String.valueOf(domainClass.getField(getIdColumnName()).get(entity)),
+					getPartitionDate(entity));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -642,7 +696,7 @@ public class Dao<T> {
 	public int update(T entity, String idValue) {
 		try {
 			final StringBuilder sb = new StringBuilder("UPDATE ");
-			sb.append(getTableName());
+			sb.append(getTableName(entity));
 			sb.append(" SET ");
 			boolean isAppend = false;
 			for (Field f : domainClass.getFields()) {
@@ -688,7 +742,7 @@ public class Dao<T> {
 	//////////////////
 	public int deleteAll(DaoWhere... wheres) {
 		StringBuilder sb = new StringBuilder("DELETE FROM ");
-		sb.append(getTableName());
+		sb.append(getTableName(wheres));
 		if (null == wheres || wheres.length == 0) {
 			throw new RuntimeException("Can't delete all by call deleteAll(null)");
 		}
@@ -712,9 +766,9 @@ public class Dao<T> {
 		return jdbcTemplate.update(sb.toString());
 	}
 
-	public int delete(String idValue) {
+	public int delete(String idValue, DateTime partitionDate) {
 		StringBuilder sb = new StringBuilder("DELETE FROM ");
-		sb.append(getTableName());
+		sb.append(getTableName(partitionDate));
 		sb.append(" WHERE ");
 		sb.append(getIdColumnName());
 		sb.append(' ');
@@ -726,23 +780,36 @@ public class Dao<T> {
 		return jdbcTemplate.update(sb.toString());
 	}
 
-	public int delete(Integer idValue) {
-		return delete(String.valueOf(idValue));
+	public int delete(Integer idValue, DateTime partitionDate) {
+		return delete(String.valueOf(idValue), partitionDate);
 	}
 
-	public int delete(Long idValue) {
-		return delete(String.valueOf(idValue));
+	public int delete(Long idValue, DateTime partitionDate) {
+		return delete(String.valueOf(idValue), partitionDate);
 	}
 
 	//////////////////
 	///
 	//////////////////
-	public void loadData(String csvFilename, boolean isLinuxOrWindows) {
+	public void loadCsv(String csvFilename, DateTime partitionDate) {
+		boolean isLinuxOrWindows = Environment.NewLine.equals("\n");
 		String sql = "LOAD DATA INFILE \"" + (isLinuxOrWindows ? csvFilename : csvFilename.substring(1))
-				+ "\" INTO TABLE `" + getTableName() + "` character set utf8"
-				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '"
-				+ (isLinuxOrWindows ? "\n" : "\r\n") + "';";
-		log.info("LOAD DATA: " + sql.replace("\n", "\\n").replace("\r", "\\r"));
+				+ "\" INTO TABLE `" + getTableName(partitionDate) + "` character set utf8"
+				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '" + Environment.NewLine + "';";
+		log.info("SQL(LOAD):" + sql.replace("\n", "\\n").replace("\r", "\\r"));
+		jdbcTemplate.execute(sql);
+	}
+
+	public void createIfNotExist(String bodySQL, DateTime partitionDate) {
+		StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+		sb.append('`');
+		sb.append(getTableName(partitionDate));
+		sb.append('`');
+		sb.append("(");
+		sb.append(bodySQL);
+		sb.append(")ENGINE=MyISAM DEFAULT CHARSET=UTF8;");
+		String sql = sb.toString();
+		log.info("SQL(CREATE):" + sql);
 		jdbcTemplate.execute(sql);
 	}
 

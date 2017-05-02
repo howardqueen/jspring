@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.Date;
 
 import javax.persistence.Column;
+import javax.persistence.Table;
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
@@ -17,7 +18,9 @@ import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
+import com.jspring.Exceptions;
 import com.jspring.Strings;
+import com.jspring.date.DateTime;
 
 public class WebDao<T> extends Dao<T> {
 
@@ -78,10 +81,42 @@ public class WebDao<T> extends Dao<T> {
 		return convertFrom(domainClass, request);
 	}
 
+	protected String getTableName(HttpServletRequest request) {
+		if (null == _oriTableName) {
+			Table table = domainClass.getAnnotation(Table.class);
+			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
+					: table.name();
+		}
+		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+			return _oriTableName;
+		}
+		String t = request.getParameter(getCrudView().partitionDateColumn);
+		if (Strings.isNullOrEmpty(t)) {
+			throw Exceptions
+					.newInstance("[QueryString]" + getCrudView().partitionDateColumn + " cannot be null or empty.");
+		}
+		return _oriTableName + "_" + DateTime.valueOf(t).toShortDateString();
+	}
+
+	public DateTime getPartitionDate(HttpServletRequest request) {
+		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+			return null;
+		}
+		String t = request.getParameter(getCrudView().partitionDateColumn);
+		if (Strings.isNullOrEmpty(t)) {
+			throw Exceptions
+					.newInstance("[QueryString]" + getCrudView().partitionDateColumn + " cannot be null or empty.");
+		}
+		return DateTime.valueOf(t);
+	}
+
+	//////////////////
+	///
+	//////////////////
 	public T insertAndGet(HttpServletRequest request) {
 		try {
 			final StringBuilder sb = new StringBuilder("INSERT INTO ");
-			sb.append(getTableName());
+			sb.append(getTableName(request));
 			sb.append(" (");
 			boolean isAppend = false;
 			for (Field f : domainClass.getFields()) {
@@ -133,13 +168,14 @@ public class WebDao<T> extends Dao<T> {
 				if (c <= 0) {
 					return null;
 				}
-				return findOne(keyHolder.getKey().toString());
+				return findOne(keyHolder.getKey().toString(), getPartitionDate(request));
 			}
 			int c = jdbcTemplate.update(sb.toString());
 			if (c <= 0) {
 				return null;
 			}
-			return findOne(request.getParameter(domainClass.getField(getIdColumnName()).getName()));
+			return findOne(request.getParameter(domainClass.getField(getIdColumnName()).getName()),
+					getPartitionDate(request));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -151,7 +187,7 @@ public class WebDao<T> extends Dao<T> {
 
 	public int insert(HttpServletRequest request) {
 		final StringBuilder sb = new StringBuilder("INSERT INTO ");
-		sb.append(getTableName());
+		sb.append(getTableName(request));
 		sb.append(" (");
 		boolean isAppend = false;
 		for (Field f : domainClass.getFields()) {
@@ -200,7 +236,7 @@ public class WebDao<T> extends Dao<T> {
 	//////////////////
 	public T updateAndGet(HttpServletRequest request, String idValue) {
 		final StringBuilder sb = new StringBuilder("UPDATE ");
-		sb.append(getTableName());
+		sb.append(getTableName(request));
 		sb.append(" SET ");
 		boolean isAppend = false;
 		for (Field f : domainClass.getFields()) {
@@ -237,12 +273,12 @@ public class WebDao<T> extends Dao<T> {
 		if (c <= 0) {
 			return null;
 		}
-		return findOne(idValue);
+		return findOne(idValue, getPartitionDate(request));
 	}
 
 	public int update(HttpServletRequest request, String idValue) {
 		final StringBuilder sb = new StringBuilder("UPDATE ");
-		sb.append(getTableName());
+		sb.append(getTableName(request));
 		sb.append(" SET ");
 		boolean isAppend = false;
 		for (Field f : domainClass.getFields()) {

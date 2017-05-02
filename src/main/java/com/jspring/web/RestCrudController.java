@@ -61,20 +61,20 @@ public final class RestCrudController implements ApplicationContextAware {
 	String[] domains;
 	private Map<String, WebDao<?>> repositories = new HashMap<>();
 
-	private WebDao<?> getDao(String domain) throws Exception {
+	private WebDao<?> getDao(String domain, HttpServletRequest request) throws Exception {
 		if (repositories.containsKey(domain)) {
-			return repositories.get(domain);
+			return (WebDao<?>) repositories.get(domain);
 		}
 		synchronized (this) {
 			if (repositories.containsKey(domain)) {
-				return repositories.get(domain);
+				return (WebDao<?>) repositories.get(domain);
 			}
 			String f = domain + "Repository";
 			if (getContext().containsBean(f)) {
 				log.info("LOAD REPOSITORY: " + f);
 				WebDao<?> dao = (WebDao<?>) getContext().getBean(f);
 				repositories.put(domain, dao);
-				return dao;
+				return (WebDao<?>) dao;
 			}
 			Class<?> t = null;
 			for (String d : domains) {
@@ -93,7 +93,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			@SuppressWarnings({ "rawtypes", "unchecked" })
 			WebDao<?> dao = new WebDao(jdbcTemplate, t);
 			repositories.put(domain, dao);
-			return dao;
+			return (WebDao<?>) dao;
 		}
 	}
 
@@ -104,7 +104,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	@RequestMapping(path = "crud/{domain}", method = RequestMethod.PUT)
 	public RestResult create(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
 		try {
-			int c = getDao(domain).insert(request);
+			int c = getDao(domain, request).insert(request);
 			if (c <= 0) {
 				throw new RuntimeException("Rows affected 0");
 			}
@@ -145,7 +145,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult update(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
-			int c = getDao(domain).update(request, id);
+			int c = getDao(domain, request).update(request, id);
 			if (c <= 0) {
 				throw new RuntimeException("Rows affected 0");
 			}
@@ -186,7 +186,8 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult delete(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
-			getDao(domain).delete(id);
+			WebDao<?> dao = getDao(domain, request);
+			dao.delete(id, dao.getPartitionDate(request));
 			//
 			RestResult r = new RestResult();
 			r.status = 200;
@@ -225,7 +226,8 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		try {
 			RestResult r = new RestResult();
-			r.content = getDao(domain).findOne(id);
+			WebDao<?> dao = getDao(domain, request);
+			r.content = dao.findOne(id, dao.getPartitionDate(request));
 			//
 			r.status = 200;
 			r.path = request.getRequestURI();
@@ -266,7 +268,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		try {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			Dao<?> dao = getDao(domain);
+			Dao<?> dao = getDao(domain, request);
 			RestPage p = new RestPage();
 			p.total = dao.countAll(wheres);
 			p.rows = dao.findAll(page, size, wheres, DaoOrder.fromJoinStrings(order));
@@ -315,7 +317,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
-			getDao(domain).deleteAll(DaoWhere.fromJoinStrings(filters));
+			getDao(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters));
 			//
 			RestResult r = new RestResult();
 			r.status = 200;
@@ -356,7 +358,8 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		try {
 			RestResult r = new RestResult();
-			r.content = getDao(domain).findOne(DaoWhere.fromJoinStrings(filters), DaoOrder.fromJoinStrings(order));
+			r.content = getDao(domain, request).findOne(DaoWhere.fromJoinStrings(filters),
+					DaoOrder.fromJoinStrings(order));
 			//
 			r.status = 200;
 			r.path = request.getRequestURI();
@@ -393,7 +396,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult createCheckNull(@PathVariable String domain, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
-			int c = getDao(domain).insertCheckNull(request);
+			int c = getDao(domain, request).insertCheckNull(request);
 			if (c <= 0) {
 				throw new RuntimeException("Rows affected 0");
 			}
@@ -434,7 +437,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult updateCheckNull(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
-			int c = getDao(domain).updateCheckNull(request, id);
+			int c = getDao(domain, request).updateCheckNull(request, id);
 			if (c <= 0) {
 				throw new RuntimeException("Rows affected 0");
 			}
@@ -478,7 +481,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) throws IOException {
 		try {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			Dao<?> dao = getDao(domain);
+			Dao<?> dao = getDao(domain, request);
 			List<?> rows = dao.findAll(page, size, wheres, DaoOrder.fromJoinStrings(order));
 			WebUtils.setResponse4Csv(response,
 					dao.getCrudView().title + "_" + (Strings.isNullOrEmpty(filters) ? "全部" : filters));
@@ -533,7 +536,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult schema(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
 		try {
 			RestResult r = new RestResult();
-			r.content = getDao(domain).getCrudView();
+			r.content = getDao(domain, request).getCrudView();
 			//
 			r.status = 200;
 			r.path = request.getRequestURI();

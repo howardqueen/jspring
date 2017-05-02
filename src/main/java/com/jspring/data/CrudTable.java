@@ -30,4 +30,6 @@ public @interface CrudTable {
 	//
 	boolean exportable() default false;
 
+	//
+	String partitionDateColumn() default "";
 }

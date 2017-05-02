@@ -800,6 +800,10 @@ public class Dao<T> {
 		jdbcTemplate.execute(sql);
 	}
 
+	public void dropTable(DateTime partitionDate) {
+		jdbcTemplate.execute("DROP TABLE " + getTableName(partitionDate));
+	}
+
 	public void createIfNotExist(String bodySQL, DateTime partitionDate) {
 		StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
 		sb.append('`');

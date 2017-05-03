@@ -14,7 +14,9 @@ public class DaoWhere {
 	public static enum Operators {
 
 		Equal("eq", "="), NotEqual("ne", "!="), Smaller("sm", "<"), SmallerOrEqual("se", "<="), Greater("gr",
-				">"), GreaterOrEqual("ge", ">="), Like("lk", "LIKE"), Between("between", "BETWEEN");
+				">"), GreaterOrEqual("ge", ">="), Like("lk", "LIKE");// ,
+																		// Between("between",
+																		// "BETWEEN");
 
 		public final String shortName;
 		public final String operator;

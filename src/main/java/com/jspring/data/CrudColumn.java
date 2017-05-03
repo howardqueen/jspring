@@ -9,8 +9,12 @@ import java.lang.annotation.Target;
 @Target({ FIELD })
 @Retention(RUNTIME)
 public @interface CrudColumn {
-	// 导出
+	// 基础信息
 	String title() default "";
+
+	String width() default "120px";
+
+	String height() default "";
 
 	// 列表
 	String header() default "";
@@ -18,11 +22,7 @@ public @interface CrudColumn {
 	boolean sortable() default false;
 
 	// 过滤
-	DaoWhere.Operators filter() default DaoWhere.Operators.Equal;
-
-	String width() default "120px";
-
-	String height() default "";
+	boolean filterable() default true;
 
 	// 创建
 	boolean createable() default true;

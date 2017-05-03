@@ -264,7 +264,7 @@ public class Dao<T> {
 				v.title = c.title();
 				v.header = c.header();
 				v.sortable = c.sortable();
-				v.filter = c.filter().shortName;
+				v.filterable = c.filterable();
 				v.width = c.width();
 				v.height = c.height();
 				v.createable = c.createable();

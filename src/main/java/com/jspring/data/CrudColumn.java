@@ -12,7 +12,7 @@ public @interface CrudColumn {
 	// 基础信息
 	String title() default "";
 
-	String width() default "120px";
+	String width() default "";
 
 	String height() default "";
 

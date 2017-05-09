@@ -5,7 +5,7 @@ public class CrudColumnInfo {
 	public String field;
 	public String fieldType;// Integer, Date, Long, Short, String
 	public String title;
-	public String width = "80px";
+	public String width;
 	public String height;
 	// 列表
 	public String header;

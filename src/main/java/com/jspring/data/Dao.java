@@ -796,13 +796,13 @@ public class Dao<T> {
 		String sql = "LOAD DATA INFILE \"" + (isLinuxOrWindows ? csvFilename : csvFilename.substring(1))
 				+ "\" INTO TABLE `" + getTableName(partitionDate) + "` character set utf8"
 				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '" + Environment.NewLine + "';";
-		log.info("SQL(LOAD):" + sql.replace("\n", "\\n").replace("\r", "\\r"));
+		log.debug("SQL(LOAD):" + sql.replace("\n", "\\n").replace("\r", "\\r"));
 		jdbcTemplate.execute(sql);
 	}
 
 	public void dropIfExists(DateTime partitionDate) {
 		String sql = "DROP TABLE IF EXISTS " + getTableName(partitionDate);
-		log.info("SQL(DROP):" + sql);
+		log.debug("SQL(DROP):" + sql);
 		jdbcTemplate.execute(sql);
 	}
 
@@ -815,7 +815,7 @@ public class Dao<T> {
 		sb.append(bodySQL);
 		sb.append(")ENGINE=MyISAM DEFAULT CHARSET=UTF8;");
 		String sql = sb.toString();
-		log.info("SQL(CREATE):" + sql);
+		log.debug("SQL(CREATE):" + sql);
 		jdbcTemplate.execute(sql);
 	}
 

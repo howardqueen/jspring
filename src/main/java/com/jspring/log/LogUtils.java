@@ -3,6 +3,7 @@ package com.jspring.log;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.jspring.Environment;
+import com.jspring.io.Directory;
 import com.jspring.io.Files;
 import com.jspring.io.ITextWriter;
 
@@ -23,7 +24,8 @@ public class LogUtils {
 
 	public static void configLog4j(Class<?> mainClass) {
 		String baseDir = Environment.getClassPath(mainClass);
-		String log4jFilename = baseDir + "log4j.properties";
+		Directory.create(baseDir + "conf/");
+		String log4jFilename = baseDir + "conf/log4j.properties";
 		if (!Files.isExist(log4jFilename)) {
 			System.out.println("CREATE LOG4J PROPERTIES FILE: " + log4jFilename);
 			ITextWriter w = Files.newWriter(log4jFilename, false);

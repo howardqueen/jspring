@@ -802,7 +802,7 @@ public class Dao<T> {
 
 	public void dropIfExists(DateTime partitionDate) {
 		String sql = "DROP TABLE IF EXISTS " + getTableName(partitionDate);
-		log.debug("SQL(DROP):" + sql);
+		log.info("SQL(DROP):" + sql);
 		jdbcTemplate.execute(sql);
 	}
 

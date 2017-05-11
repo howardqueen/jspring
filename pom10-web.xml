@@ -101,6 +101,7 @@
 				<version>3.0.1</version>
 				<configuration>
 					<attach>true</attach>
+					<encoding>utf8</encoding>
 				</configuration>
 				<executions>
 					<execution>

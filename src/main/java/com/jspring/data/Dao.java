@@ -239,6 +239,7 @@ public class Dao<T> {
 		_crudView = new CrudTableInfo();
 		CrudTable cv = domainClass.getAnnotation(CrudTable.class);
 		if (null != cv) {
+			_crudView.idField = this.getIdColumnName();
 			_crudView.title = cv.title();
 			_crudView.width = cv.width();
 			_crudView.height = cv.height();

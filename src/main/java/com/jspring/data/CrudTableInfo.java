@@ -3,6 +3,7 @@ package com.jspring.data;
 public class CrudTableInfo {
 	//
 	public CrudColumnInfo[] columns;
+	public String idField;
 
 	// 导出
 	public String title;

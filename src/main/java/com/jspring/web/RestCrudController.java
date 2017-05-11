@@ -3,6 +3,7 @@ package com.jspring.web;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.jspring.Encodings;
 import com.jspring.Exceptions;
 import com.jspring.Strings;
 import com.jspring.data.Dao;
@@ -145,6 +147,9 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult update(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
+			if (id.indexOf('%') >= 0) {
+				id = URLDecoder.decode(id, Encodings.UTF8.value);
+			}
 			int c = getDao(domain, request).update(request, id);
 			if (c <= 0) {
 				throw new RuntimeException("Rows affected 0");
@@ -186,6 +191,9 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult delete(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
+			if (id.indexOf('%') >= 0) {
+				id = URLDecoder.decode(id, Encodings.UTF8.value);
+			}
 			WebDao<?> dao = getDao(domain, request);
 			dao.delete(id, dao.getPartitionDate(request));
 			//
@@ -225,6 +233,9 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult findOne(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
+			if (id.indexOf('%') >= 0) {
+				id = URLDecoder.decode(id, Encodings.UTF8.value);
+			}
 			RestResult r = new RestResult();
 			WebDao<?> dao = getDao(domain, request);
 			r.content = dao.findOne(id, dao.getPartitionDate(request));
@@ -437,6 +448,9 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult updateCheckNull(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
 		try {
+			if (id.indexOf('%') >= 0) {
+				id = URLDecoder.decode(id, Encodings.UTF8.value);
+			}
 			int c = getDao(domain, request).updateCheckNull(request, id);
 			if (c <= 0) {
 				throw new RuntimeException("Rows affected 0");

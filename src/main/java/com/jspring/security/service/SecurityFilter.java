@@ -9,22 +9,19 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.SecurityMetadataSource;
 import org.springframework.security.access.intercept.AbstractSecurityInterceptor;
 import org.springframework.security.access.intercept.InterceptorStatusToken;
 import org.springframework.security.web.FilterInvocation;
-import org.springframework.stereotype.Service;
 
-@Service
 public class SecurityFilter extends AbstractSecurityInterceptor implements Filter {
 
-	@Autowired
-	SecurityResourceService securityResourceService;
+	private final SecurityResourceService securityResourceService;
 
-	@Autowired
-	public SecurityFilter(SecurityDecisionManager accessDecisionManager) {
+	public SecurityFilter(SecurityDecisionManager accessDecisionManager,
+			SecurityResourceService securityResourceService) {
 		super.setAccessDecisionManager(accessDecisionManager);
+		this.securityResourceService = securityResourceService;
 	}
 
 	public void init(FilterConfig filterConfig) throws ServletException {

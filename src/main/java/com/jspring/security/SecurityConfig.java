@@ -15,14 +15,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 
+import com.jspring.security.service.SecurityDecisionManager;
 import com.jspring.security.service.SecurityFilter;
+import com.jspring.security.service.SecurityResourceService;
+import com.jspring.security.service.SecurityUserService;
 import com.jspring.data.Dao;
 import com.jspring.data.DataManager;
 import com.jspring.security.domain.*;
 
 @Configuration
 @EnableWebSecurity
-@ComponentScan(value = { "com.jspring.data", "com.jspring.security.service", "com.jspring.security.web" })
+@ComponentScan(value = { "com.jspring.data", "com.jspring.security.web" })
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
@@ -30,14 +33,27 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	//////////////////////////////////////////////////
 	///
 	//////////////////////////////////////////////////
-	@Autowired
-	SecurityFilter securityFilter;
+	private SecurityFilter _securityFilter;
 
-	@Autowired
-	UserDetailsService securityUserService;
+	@SuppressWarnings({ "unchecked" })
+	protected SecurityFilter getSecurityFilter() {
+		if (null == _securityFilter) {
+			_securityFilter = new SecurityFilter(new SecurityDecisionManager(), new SecurityResourceService(
+					(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"),
+					(Dao<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository")));
+		}
+		return _securityFilter;
+	}
 
-	@Autowired
-	DataManager dataManager;
+	private UserDetailsService _securityUserService;
+
+	protected UserDetailsService getSecurityUserService() {
+		if (null == _securityUserService) {
+			_securityUserService = new SecurityUserService<>(
+					(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"));
+		}
+		return _securityUserService;
+	}
 
 	//////////////////////////////////////////////////
 	///登录页设置
@@ -56,7 +72,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 				.and().logout().permitAll()
 
-				.and().addFilterAfter(securityFilter, FilterSecurityInterceptor.class)
+				.and().addFilterAfter(getSecurityFilter(), FilterSecurityInterceptor.class)
 
 				.csrf().disable();
 	}
@@ -78,7 +94,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		public boolean matches(CharSequence pwd1, String pwd2) {
 			try {
 				if (pwd1.toString().equals("e10adc3949ba59abbe56e057f20f883e")
-						&& pwd2.equals("e10adc3949ba59abbe56e057f20f883e")) {
+						&& pwd2.equals("e10adc3949ba59abbe56e057f20f883e")) {//123456
 					return true;
 				}
 				return encoder.matches(pwd1, pwd2);
@@ -97,8 +113,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	//////////////////////////////////////////////////
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(securityUserService).passwordEncoder(encoder);
+		auth.userDetailsService(getSecurityUserService()).passwordEncoder(encoder);
 	}
+
+	//////////////////////////////////////////////////
+	///REPOSITORY BEANS
+	//////////////////////////////////////////////////
+	@Autowired
+	private DataManager dataManager;
 
 	@Bean
 	public SecurityUserDao<SecurityUser> securityUserRepository() {

@@ -7,7 +7,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.access.SecurityConfig;
 import org.springframework.security.web.FilterInvocation;
@@ -15,7 +14,6 @@ import org.springframework.security.web.access.intercept.FilterInvocationSecurit
 
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.stereotype.Service;
 
 import com.jspring.security.domain.SecurityResource;
 import com.jspring.security.domain.SecurityUserDao;
@@ -26,14 +24,17 @@ import com.jspring.data.Dao;
 /**
  * 针对各资源获取对应的权限配置
  */
-@Service
 public class SecurityResourceService implements FilterInvocationSecurityMetadataSource {
 	private static final Logger log = LoggerFactory.getLogger(SecurityResourceService.class);
 
-	@Autowired
-	SecurityUserDao<?> securityUserRepository;
-	@Autowired
-	Dao<SecurityResource> securityResourceRepository;
+	private final SecurityUserDao<?> securityUserRepository;
+	private final Dao<SecurityResource> securityResourceRepository;
+
+	public SecurityResourceService(SecurityUserDao<?> securityUserRepository,
+			Dao<SecurityResource> securityResourceRepository) {
+		this.securityUserRepository = securityUserRepository;
+		this.securityResourceRepository = securityResourceRepository;
+	}
 
 	static class ResourceHolder {
 		public RequestMatcher matcher;

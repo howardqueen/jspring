@@ -11,7 +11,7 @@ import javax.persistence.Table;
 		//
 		+ "`userName` varchar(50)	NOT NULL,\n"
 		//
-		+ "`password` varchar(32) NOT NULL,\n"
+		+ "`password` varchar(32) NOT NULL DEFAULT 'e10adc3949ba59abbe56e057f20f883e',\n"
 		//
 		+ "`createTime` datetime NOT NULL,\n"
 		//

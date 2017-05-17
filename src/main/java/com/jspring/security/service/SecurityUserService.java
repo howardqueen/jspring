@@ -3,18 +3,15 @@ package com.jspring.security.service;
 import java.util.Collection;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.stereotype.Service;
 
 import com.jspring.security.domain.SecurityUser;
 import com.jspring.security.domain.SecurityRole;
 import com.jspring.security.domain.SecurityUserDao;
 
-@Service
 public class SecurityUserService<T extends SecurityUser> implements UserDetailsService {
 
 	public static final class SecurityUserDetails<T extends SecurityUser> implements UserDetails {
@@ -75,8 +72,11 @@ public class SecurityUserService<T extends SecurityUser> implements UserDetailsS
 
 	}
 
-	@Autowired
-	SecurityUserDao<T> securityUserRepository;
+	private final SecurityUserDao<T> securityUserRepository;
+
+	public SecurityUserService(SecurityUserDao<T> securityUserRepository) {
+		this.securityUserRepository = securityUserRepository;
+	}
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

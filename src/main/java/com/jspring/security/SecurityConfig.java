@@ -19,6 +19,7 @@ import com.jspring.security.service.SecurityDecisionManager;
 import com.jspring.security.service.SecurityFilter;
 import com.jspring.security.service.SecurityResourceService;
 import com.jspring.security.service.SecurityUserService;
+import com.jspring.Strings;
 import com.jspring.data.Dao;
 import com.jspring.data.DataManager;
 import com.jspring.security.domain.*;
@@ -28,7 +29,11 @@ import com.jspring.security.domain.*;
 @ComponentScan(value = { "com.jspring.data", "com.jspring.security.web" })
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-	private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+	protected final Logger log;
+
+	public SecurityConfig() {
+		this.log = LoggerFactory.getLogger(this.getClass());
+	}
 
 	//////////////////////////////////////////////////
 	///
@@ -80,12 +85,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	//////////////////////////////////////////////////
 	///密码加盐处理
 	//////////////////////////////////////////////////
-	private static final class MyPasswordEncoder implements PasswordEncoder {
-		private final String SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";//盐值
-		private final PasswordEncoder encoder = new StandardPasswordEncoder(SITE_WIDE_SECRET);
+	private static final String PASSWORD_SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";//盐值
+	public static final String PASSWORD_DEFAULT = "e10adc3949ba59abbe56e057f20f883e";
+
+	protected static final class MyPasswordEncoder implements PasswordEncoder {
+		private static final Logger log = LoggerFactory.getLogger(MyPasswordEncoder.class);
+		private final PasswordEncoder encoder = new StandardPasswordEncoder(PASSWORD_SITE_WIDE_SECRET);
 
 		public String encode(CharSequence pwd) {
-			if (pwd.toString() == "e10adc3949ba59abbe56e057f20f883e") {//初始密码123456
+			if (pwd.toString() == PASSWORD_DEFAULT) {//初始密码123456
 				return pwd.toString();
 			}
 			return encoder.encode(pwd);
@@ -93,8 +101,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		public boolean matches(CharSequence pwd1, String pwd2) {
 			try {
-				if (pwd1.toString().equals("e10adc3949ba59abbe56e057f20f883e")
-						&& pwd2.equals("e10adc3949ba59abbe56e057f20f883e")) {//123456
+				if (pwd1.length() == 0 || Strings.isNullOrEmpty(pwd2)) {
+					return false;
+				}
+				if (pwd1.toString().equals(PASSWORD_DEFAULT) && pwd2.equals(PASSWORD_DEFAULT)) {//123456
 					return true;
 				}
 				return encoder.matches(pwd1, pwd2);
@@ -106,62 +116,55 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	}
 
-	private static final PasswordEncoder encoder = new MyPasswordEncoder();
+	public static final PasswordEncoder PASSWORD_ENCODER = new MyPasswordEncoder();
 
 	//////////////////////////////////////////////////
 	///密码验证
 	//////////////////////////////////////////////////
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(getSecurityUserService()).passwordEncoder(encoder);
+		auth.userDetailsService(getSecurityUserService()).passwordEncoder(PASSWORD_ENCODER);
 	}
 
 	//////////////////////////////////////////////////
 	///REPOSITORY BEANS
 	//////////////////////////////////////////////////
 	@Autowired
-	private DataManager dataManager;
+	protected DataManager dataManager;
 
 	@Bean
 	public SecurityUserDao<SecurityUser> securityUserRepository() {
-		return new SecurityUserDao<SecurityUser>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityUser.class);
+		return new SecurityUserDao<SecurityUser>(dataManager, SecurityUser.class);
 	}
 
 	@Bean
 	public Dao<SecurityUserRole> securityUserRoleRepository() {
-		return new Dao<SecurityUserRole>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityUserRole.class);
+		return new Dao<SecurityUserRole>(dataManager, SecurityUserRole.class);
 	}
 
 	@Bean
 	public Dao<SecurityRole> securityRoleRepository() {
-		return new Dao<SecurityRole>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityRole.class);
+		return new Dao<SecurityRole>(dataManager, SecurityRole.class);
 	}
 
 	@Bean
 	public Dao<SecurityRoleMenu> securityRoleMenuRepository() {
-		return new Dao<SecurityRoleMenu>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityRoleMenu.class);
+		return new Dao<SecurityRoleMenu>(dataManager, SecurityRoleMenu.class);
 	}
 
 	@Bean
 	public Dao<SecurityMenu> securityMenuRepository() {
-		return new Dao<SecurityMenu>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityMenu.class);
+		return new Dao<SecurityMenu>(dataManager, SecurityMenu.class);
 	}
 
 	@Bean
 	public Dao<SecurityMenuResource> securityMenuResourceRepository() {
-		return new Dao<SecurityMenuResource>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityMenuResource.class);
+		return new Dao<SecurityMenuResource>(dataManager, SecurityMenuResource.class);
 	}
 
 	@Bean
 	public Dao<SecurityResource> securityResourceRepository() {
-		return new Dao<SecurityResource>(dataManager, // (DataManager) this.getApplicationContext().getBean("dataManager"),
-				SecurityResource.class);
+		return new Dao<SecurityResource>(dataManager, SecurityResource.class);
 	}
 
 	@SuppressWarnings({ "unchecked" })

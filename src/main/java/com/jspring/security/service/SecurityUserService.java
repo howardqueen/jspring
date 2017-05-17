@@ -42,7 +42,7 @@ public class SecurityUserService<T extends SecurityUser> implements UserDetailsS
 
 		@Override
 		public boolean isEnabled() {// 是否有效
-			return this.user.isEnabled;
+			return true;
 		}
 
 		@Override

@@ -23,8 +23,6 @@ import javax.persistence.Table;
 		//
 		+ "`isLocked` bit(1) NOT NULL DEFAULT b'0',\n"
 		//
-		+ "`isEnabled` bit(1) NOT NULL DEFAULT b'1',\n"
-		//
 		+ "PRIMARY KEY (`userId`)")
 public class SecurityUser {
 
@@ -37,6 +35,5 @@ public class SecurityUser {
 	public String nickName;
 	public String realName;
 	public Boolean isLocked;
-	public Boolean isEnabled;
 
 }

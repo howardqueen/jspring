@@ -61,18 +61,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http.authorizeRequests()
-
+				//允许静态资源访问
 				.antMatchers(SKIP_URLS).permitAll()
-
+				//开启其它资源授权
 				.anyRequest().authenticated()
-
+				//设置登陆地址
 				.and().formLogin().loginPage("/login").permitAll()
-
+				//设置登出地址
 				.and().logout().permitAll()
-
+				//加入自定义过滤器
 				.and().addFilterAfter(getSecurityFilter(), FilterSecurityInterceptor.class)
-
-				.csrf().disable();
+				//暂停防CSRF攻击
+				.csrf().disable()
+				//允许在IFRAME中嵌入展示
+				.headers().frameOptions().disable();
 	}
 
 	//////////////////////////////////////////////////

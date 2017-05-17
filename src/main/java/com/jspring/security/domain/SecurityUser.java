@@ -21,9 +21,9 @@ import javax.persistence.Table;
 		//
 		+ "`realName` varchar(20) NOT NULL,\n"
 		//
-		+ "`isLocked` bit(1) NOT NULL DEFAULT '0',\n"
+		+ "`isLocked` bit(1) NOT NULL DEFAULT b'0',\n"
 		//
-		+ "`isEnabled` bit(1) NOT NULL DEFAULT '1',\n"
+		+ "`isEnabled` bit(1) NOT NULL DEFAULT b'1',\n"
 		//
 		+ "PRIMARY KEY (`userId`)")
 public class SecurityUser {

@@ -17,7 +17,9 @@ import com.jspring.web.WebUtils;
 
 @Controller
 public final class SecurityController {
+
 	private static final Logger log = LoggerFactory.getLogger(SecurityController.class);
+
 	@Autowired
 	SecurityResourceService securityResourceService;
 

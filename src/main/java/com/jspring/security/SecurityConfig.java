@@ -35,12 +35,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	//////////////////////////////////////////////////
 	private SecurityFilter _securityFilter;
 
-	@SuppressWarnings({ "unchecked" })
 	protected SecurityFilter getSecurityFilter() {
 		if (null == _securityFilter) {
-			_securityFilter = new SecurityFilter(new SecurityDecisionManager(), new SecurityResourceService(
-					(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"),
-					(Dao<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository")));
+			_securityFilter = new SecurityFilter(new SecurityDecisionManager(),
+					(SecurityResourceService) this.getApplicationContext().getBean("securityResourceService"));
 		}
 		return _securityFilter;
 	}
@@ -163,4 +161,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		return new Dao<SecurityResource>(dataManager, // (DataManager) this.getApplicationContext().getBean("dataManager"),
 				SecurityResource.class);
 	}
+
+	@SuppressWarnings({ "unchecked" })
+	@Bean
+	public SecurityResourceService securityResourceService() {
+		return new SecurityResourceService(
+				(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"),
+				(Dao<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository"));
+	}
+
 }

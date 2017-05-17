@@ -8,12 +8,10 @@ import java.sql.Statement;
 import java.util.Date;
 
 import javax.persistence.Column;
-import javax.persistence.Table;
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -24,8 +22,12 @@ import com.jspring.date.DateTime;
 
 public class WebDao<T> extends Dao<T> {
 
-	public WebDao(JdbcTemplate jdbcTemplate, Class<T> domainClass) {
-		super(jdbcTemplate, domainClass);
+	public WebDao(DataManager dataManager, Class<T> domainClass) {
+		super(dataManager, domainClass);
+	}
+
+	public WebDao(DataManager dataManager, Class<T> domainClass, String databaseName, String tableName) {
+		super(dataManager, domainClass, databaseName, tableName);
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(WebDao.class);
@@ -82,20 +84,15 @@ public class WebDao<T> extends Dao<T> {
 	}
 
 	protected String getTableName(HttpServletRequest request) {
-		if (null == _oriTableName) {
-			Table table = domainClass.getAnnotation(Table.class);
-			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
-					: table.name();
-		}
 		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
-			return _oriTableName;
+			return oriTableName;
 		}
 		String t = request.getParameter(getCrudView().partitionDateColumn);
 		if (Strings.isNullOrEmpty(t)) {
 			throw Exceptions
 					.newInstance("[QueryString]" + getCrudView().partitionDateColumn + " cannot be null or empty.");
 		}
-		return _oriTableName + "_" + DateTime.valueOf(t).toShortDateString();
+		return oriTableName + "_" + DateTime.valueOf(t).toShortDateString();
 	}
 
 	public DateTime getPartitionDate(HttpServletRequest request) {

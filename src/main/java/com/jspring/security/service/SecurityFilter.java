@@ -19,13 +19,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class SecurityFilter extends AbstractSecurityInterceptor implements Filter {
 
-	private final SecurityResourceService securityResourceService;
+	@Autowired
+	SecurityResourceService securityResourceService;
 
 	@Autowired
-	public SecurityFilter(SecurityDecisionManager accessDecisionManager,
-			SecurityResourceService securityResourceService) {
+	public SecurityFilter(SecurityDecisionManager accessDecisionManager) {
 		super.setAccessDecisionManager(accessDecisionManager);
-		this.securityResourceService = securityResourceService;
 	}
 
 	public void init(FilterConfig filterConfig) throws ServletException {

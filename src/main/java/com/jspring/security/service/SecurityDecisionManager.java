@@ -12,7 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service(value = "accessDecisionManager")
 public class SecurityDecisionManager implements AccessDecisionManager {
 	private static final Logger log = LoggerFactory.getLogger(SecurityDecisionManager.class);
 

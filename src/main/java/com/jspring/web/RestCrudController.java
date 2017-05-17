@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +33,7 @@ import com.jspring.data.WebDao;
 import com.jspring.data.CrudColumnInfo;
 import com.jspring.data.DaoOrder;
 import com.jspring.data.DaoWhere;
+import com.jspring.data.DataManager;
 import com.jspring.date.DateFormats;
 
 @Controller
@@ -53,7 +53,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	}
 
 	@Autowired
-	JdbcTemplate jdbcTemplate;
+	DataManager dataManager;
 
 	protected String getUpperFirstLetter(String domain) {
 		return (char) (domain.charAt(0) - 32) + domain.substring(1);
@@ -93,7 +93,7 @@ public final class RestCrudController implements ApplicationContextAware {
 				throw new Exception("DOMAIN NOT EXISTS: " + domain);
 			}
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			WebDao<?> dao = new WebDao(jdbcTemplate, t);
+			WebDao<?> dao = new WebDao(dataManager, t);
 			repositories.put(domain, dao);
 			return (WebDao<?>) dao;
 		}

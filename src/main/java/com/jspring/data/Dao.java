@@ -58,27 +58,23 @@ public class Dao<T> {
 	//////////////////
 	///
 	//////////////////
+	public final boolean isPartitionDateTable;
 	protected final JdbcTemplate jdbcTemplate;
 	protected final Class<T> domainClass;
+	protected final String oriTableName;
 
 	//////////////////
 	///
 	//////////////////
-	protected String _oriTableName = null;
 	protected Field _partitionDateField = null;
 
 	protected String getTableName(DaoWhere[] wheres) {
-		if (null == _oriTableName) {
-			Table table = domainClass.getAnnotation(Table.class);
-			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
-					: table.name();
-		}
-		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
-			return _oriTableName;
+		if (!isPartitionDateTable) {
+			return oriTableName;
 		}
 		for (DaoWhere w : wheres) {
 			if (w.column.equals(getCrudView().partitionDateColumn)) {
-				return _oriTableName + "_" + DateTime.valueOf(w.value).toShortDateString();
+				return oriTableName + "_" + DateTime.valueOf(w.value).toShortDateString();
 			}
 		}
 		throw Exceptions
@@ -87,13 +83,8 @@ public class Dao<T> {
 
 	protected String getTableName(T entity)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		if (null == _oriTableName) {
-			Table table = domainClass.getAnnotation(Table.class);
-			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
-					: table.name();
-		}
-		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
-			return _oriTableName;
+		if (!isPartitionDateTable) {
+			return oriTableName;
 		}
 		if (null == _partitionDateField) {
 			_partitionDateField = domainClass.getField(getCrudView().partitionDateColumn);
@@ -102,27 +93,22 @@ public class Dao<T> {
 		if (null == partitionDate) {
 			throw Exceptions.newNullArgumentException("entity." + getCrudView().partitionDateColumn);
 		}
-		return _oriTableName + "_" + partitionDate.toShortDateString();
+		return oriTableName + "_" + partitionDate.toShortDateString();
 	}
 
 	protected String getTableName(DateTime partitionDate) {
-		if (null == _oriTableName) {
-			Table table = domainClass.getAnnotation(Table.class);
-			_oriTableName = (null == table || Strings.isNullOrEmpty(table.name())) ? domainClass.getSimpleName()
-					: table.name();
-		}
-		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
-			return _oriTableName;
+		if (!isPartitionDateTable) {
+			return oriTableName;
 		}
 		if (null == partitionDate) {
 			throw Exceptions.newNullArgumentException("partitionDate");
 		}
-		return _oriTableName + "_" + partitionDate.toShortDateString();
+		return oriTableName + "_" + partitionDate.toShortDateString();
 	}
 
 	public DateTime getPartitionDate(T entity)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		if (Strings.isNullOrEmpty(getCrudView().partitionDateColumn)) {
+		if (!isPartitionDateTable) {
 			return null;
 		}
 		if (null == _partitionDateField) {
@@ -190,9 +176,53 @@ public class Dao<T> {
 	//////////////////
 	/// CRUD VIEW
 	//////////////////
-	public Dao(JdbcTemplate jdbcTemplate, Class<T> domainClass) {
-		this.jdbcTemplate = jdbcTemplate;
+	public Dao(DataManager dataManager, Class<T> domainClass) {
 		this.domainClass = domainClass;
+		CrudTable cv = domainClass.getAnnotation(CrudTable.class);
+		this.isPartitionDateTable = (null == cv || Strings.isNullOrEmpty(cv.partitionDateColumn())) ? false : true;
+		//
+		Table table = domainClass.getAnnotation(Table.class);
+		if (null == table) {
+			this.jdbcTemplate = dataManager.getSpringDatabase().jdbcTemplate;
+			this.oriTableName = domainClass.getSimpleName();
+			return;
+		}
+		this.jdbcTemplate = Strings.isNullOrEmpty(table.catalog()) ? dataManager.getSpringDatabase().jdbcTemplate
+				: dataManager.getDatabase(table.catalog()).jdbcTemplate;
+		this.oriTableName = Strings.isNullOrEmpty(table.name()) ? domainClass.getSimpleName() : table.name();
+		if (!isPartitionDateTable && !Strings.isNullOrEmpty(table.schema())) {
+			log.info("CREATE TABLE [" + this.oriTableName + "] ...");
+			this.createIfNotExists(table.schema(), null);
+		}
+	}
+
+	public Dao(DataManager dataManager, Class<T> domainClass, String databaseName, String tableName) {
+		this.domainClass = domainClass;
+		CrudTable cv = domainClass.getAnnotation(CrudTable.class);
+		this.isPartitionDateTable = (null == cv || Strings.isNullOrEmpty(cv.partitionDateColumn())) ? false : true;
+		//
+		Table table = domainClass.getAnnotation(Table.class);
+		if (null == table) {
+			this.jdbcTemplate = Strings.isNullOrEmpty(databaseName) ? dataManager.getSpringDatabase().jdbcTemplate
+					: dataManager.getDatabase(databaseName).jdbcTemplate;
+			this.oriTableName = Strings.isNullOrEmpty(tableName) ? domainClass.getSimpleName() : tableName;
+			return;
+		}
+		if (Strings.isNullOrEmpty(databaseName)) {
+			this.jdbcTemplate = Strings.isNullOrEmpty(table.catalog()) ? dataManager.getSpringDatabase().jdbcTemplate
+					: dataManager.getDatabase(table.catalog()).jdbcTemplate;
+		} else {
+			this.jdbcTemplate = dataManager.getDatabase(databaseName).jdbcTemplate;
+		}
+		if (Strings.isNullOrEmpty(tableName)) {
+			this.oriTableName = Strings.isNullOrEmpty(table.name()) ? domainClass.getSimpleName() : table.name();
+		} else {
+			this.oriTableName = tableName;
+		}
+		if (!isPartitionDateTable && !Strings.isNullOrEmpty(table.schema())) {
+			log.info("CREATE TABLE [" + this.oriTableName + "] ...");
+			this.createIfNotExists(table.schema(), null);
+		}
 	}
 
 	//////////////////
@@ -230,6 +260,7 @@ public class Dao<T> {
 	//////////////////
 	/// CRUD VIEW
 	//////////////////
+
 	private CrudTableInfo _crudView;
 
 	public CrudTableInfo getCrudView() {
@@ -326,6 +357,8 @@ public class Dao<T> {
 				return '"' + DateTime.getNow().toString() + '"';
 			case ("Float"):
 				return "'0'";
+			case ("Boolean"):
+				return "'0'";
 			default:
 				throw new RuntimeException("BaseDao.convert2SQL(): Cannot convert field to SQL object for "
 						+ domainClass.getSimpleName() + "." + f.getType().getSimpleName());
@@ -355,17 +388,20 @@ public class Dao<T> {
 						case ("Long"):
 							f.set(domain, rs.getLong(getColumnName(f)));
 							continue;
+						case ("Date"):
+							f.set(domain, rs.getTimestamp(getColumnName(f)));
+							continue;
 						case ("Short"):
 							f.set(domain, rs.getShort(getColumnName(f)));
 							continue;
 						case ("Double"):
 							f.set(domain, rs.getDouble(getColumnName(f)));
 							continue;
-						case ("Date"):
-							f.set(domain, rs.getTimestamp(getColumnName(f)));
-							continue;
 						case ("Float"):
 							f.set(domain, rs.getFloat(getColumnName(f)));
+							continue;
+						case ("Boolean"):
+							f.set(domain, rs.getBoolean(getColumnName(f)));
 							continue;
 						default:
 							log.warn("BaseDao.findAll(): Cannot convert field from database for "
@@ -795,7 +831,7 @@ public class Dao<T> {
 	public void loadCsv(String csvFilename, DateTime partitionDate) {
 		boolean isLinuxOrWindows = Environment.NewLine.equals("\n");
 		String sql = "LOAD DATA INFILE \"" + (isLinuxOrWindows ? csvFilename : csvFilename.substring(1))
-				+ "\" INTO TABLE `" + getTableName(partitionDate) + "` character set utf8"
+				+ "\" INTO TABLE " + getTableName(partitionDate) + " character set utf8"
 				+ " FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '" + Environment.NewLine + "';";
 		log.debug("SQL(LOAD):" + sql.replace("\n", "\\n").replace("\r", "\\r"));
 		jdbcTemplate.execute(sql);
@@ -809,9 +845,9 @@ public class Dao<T> {
 
 	public void createIfNotExists(String bodySQL, DateTime partitionDate) {
 		StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
-		sb.append('`');
+		// sb.append('`');
 		sb.append(getTableName(partitionDate));
-		sb.append('`');
+		// sb.append('`');
 		sb.append("(");
 		sb.append(bodySQL);
 		sb.append(")ENGINE=MyISAM DEFAULT CHARSET=UTF8;");

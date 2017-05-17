@@ -18,15 +18,22 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Service;
 
 import com.jspring.security.domain.SecurityResource;
-import com.jspring.security.domain.SecurityResourceRepository;
+import com.jspring.security.domain.SecurityUserDao;
 import com.jspring.security.domain.SecurityRole;
+import com.jspring.Exceptions;
+import com.jspring.data.Dao;
 
+/**
+ * 针对各资源获取对应的权限配置
+ */
 @Service
 public class SecurityResourceService implements FilterInvocationSecurityMetadataSource {
 	private static final Logger log = LoggerFactory.getLogger(SecurityResourceService.class);
 
 	@Autowired
-	SecurityResourceRepository securityResourceRepository;
+	SecurityUserDao<?> securityUserRepository;
+	@Autowired
+	Dao<SecurityResource> securityResourceRepository;
 
 	static class ResourceHolder {
 		public RequestMatcher matcher;
@@ -53,7 +60,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 				log.debug(">> LOAD ROLES [" + r.url + ":" + r.method + "]: ");
 				i.matcher = new AntPathRequestMatcher(r.url);
 				i.method = r.method;
-				for (SecurityRole o : securityResourceRepository.findRoles(r.resourceId)) {
+				for (SecurityRole o : securityUserRepository.findRoles(r.resourceId)) {
 					log.debug("  " + o.getAuthority());
 					i.attributes.add(new SecurityConfig(o.getAuthority()));
 				}
@@ -73,22 +80,22 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 		for (String u : com.jspring.security.SecurityConfig.SKIP_URLS) {
 			ANONYMOUS_SKIP_URLS.add(new AntPathRequestMatcher(u));
 		}
-		ANONYMOUS_ADMIN_AUTHS.add(new SecurityConfig("ROLE_ADMIN"));
+		ANONYMOUS_ADMIN_AUTHS.add(new SecurityConfig(SecurityRole.ADMIN.roleName));
 	}
 
 	public Collection<ConfigAttribute> getAttributes(Object object) throws IllegalArgumentException {
 		try {
 			loadResources();
 		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
+			log.warn(Exceptions.getStackTrace(e));
 		} catch (SecurityException e) {
-			e.printStackTrace();
+			log.warn(Exceptions.getStackTrace(e));
 		}
 		HttpServletRequest request = ((FilterInvocation) object).getHttpRequest();
 		if (request.getMethod().equalsIgnoreCase("get")) {
 			for (RequestMatcher m : ANONYMOUS_SKIP_URLS) {
 				if (m.matches(request)) {
-					log.debug(">> [" + request.getRequestURI() + ":" + request.getMethod() + "] SKIP FOR ANONYMOUS");
+					log.trace(">> [" + request.getRequestURI() + ":" + request.getMethod() + "] SKIP FOR ANONYMOUS");
 					return null;
 				}
 			}
@@ -98,12 +105,12 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 			if (("*".equals(resource.method) || request.getMethod().equalsIgnoreCase(resource.method))
 					&& resource.matcher.matches(request)) {
 				for (ConfigAttribute a : resource.attributes) {
-					log.debug(a.getAttribute());
+					log.trace(a.getAttribute());
 				}
 				return resource.attributes;
 			}
 		}
-		return ANONYMOUS_ADMIN_AUTHS;
+		return ANONYMOUS_ADMIN_AUTHS;//未查询到的配置，默认超级管理员可访问
 	}
 
 	public Collection<ConfigAttribute> getAllConfigAttributes() {

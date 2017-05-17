@@ -3,6 +3,7 @@ package com.jspring.security;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -15,26 +16,32 @@ import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 
 import com.jspring.security.service.SecurityFilter;
+import com.jspring.data.Dao;
+import com.jspring.data.DataManager;
+import com.jspring.security.domain.*;
 
 @Configuration
 @EnableWebSecurity
-@ComponentScan(value = { "com.jspring.security.domain", "com.jspring.security.service",
-		"com.jspring.security.web" })
+@ComponentScan(value = { "com.jspring.data", "com.jspring.security.service", "com.jspring.security.web" })
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
 	private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
+	//////////////////////////////////////////////////
+	///
+	//////////////////////////////////////////////////
 	@Autowired
 	SecurityFilter securityFilter;
 
-	private UserDetailsService securityUserService;
+	@Autowired
+	UserDetailsService securityUserService;
 
-	protected UserDetailsService getUserDetailsService() {
-		if (null == securityUserService) {
-			securityUserService = (UserDetailsService) this.getApplicationContext().getBean("securityUserService");
-		}
-		return securityUserService;
-	}
+	@Autowired
+	DataManager dataManager;
 
+	//////////////////////////////////////////////////
+	///登录页设置
+	//////////////////////////////////////////////////
 	public static final String[] SKIP_URLS = { "/favicon.ico", "/easyui/**", "/js/**", "/css/**" };
 
 	@Override
@@ -54,8 +61,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.csrf().disable();
 	}
 
-	private static final PasswordEncoder encoder = new MyPasswordEncoder();
-
+	//////////////////////////////////////////////////
+	///密码加盐处理
+	//////////////////////////////////////////////////
 	private static final class MyPasswordEncoder implements PasswordEncoder {
 		private final String SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";//盐值
 		private final PasswordEncoder encoder = new StandardPasswordEncoder(SITE_WIDE_SECRET);
@@ -82,9 +90,55 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	}
 
+	private static final PasswordEncoder encoder = new MyPasswordEncoder();
+
+	//////////////////////////////////////////////////
+	///密码验证
+	//////////////////////////////////////////////////
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(getUserDetailsService()).passwordEncoder(encoder);
+		auth.userDetailsService(securityUserService).passwordEncoder(encoder);
 	}
 
+	@Bean
+	public SecurityUserDao<SecurityUser> securityUserRepository() {
+		return new SecurityUserDao<SecurityUser>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityUser.class);
+	}
+
+	@Bean
+	public Dao<SecurityUserRole> securityUserRoleRepository() {
+		return new Dao<SecurityUserRole>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityUserRole.class);
+	}
+
+	@Bean
+	public Dao<SecurityRole> securityRoleRepository() {
+		return new Dao<SecurityRole>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityRole.class);
+	}
+
+	@Bean
+	public Dao<SecurityRoleMenu> securityRoleMenuRepository() {
+		return new Dao<SecurityRoleMenu>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityRoleMenu.class);
+	}
+
+	@Bean
+	public Dao<SecurityMenu> securityMenuRepository() {
+		return new Dao<SecurityMenu>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityMenu.class);
+	}
+
+	@Bean
+	public Dao<SecurityMenuResource> securityMenuResourceRepository() {
+		return new Dao<SecurityMenuResource>(dataManager, //(DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityMenuResource.class);
+	}
+
+	@Bean
+	public Dao<SecurityResource> securityResourceRepository() {
+		return new Dao<SecurityResource>(dataManager, // (DataManager) this.getApplicationContext().getBean("dataManager"),
+				SecurityResource.class);
+	}
 }

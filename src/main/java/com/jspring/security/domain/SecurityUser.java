@@ -13,9 +13,9 @@ import javax.persistence.Table;
 		//
 		+ "`password` varchar(32) NOT NULL DEFAULT 'e10adc3949ba59abbe56e057f20f883e',\n"
 		//
-		+ "`createTime` datetime NOT NULL,\n"
+		+ "`createTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n"
 		//
-		+ "`lastVisit` datetime NOT NULL,\n"
+		+ "`lastVisit` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n"
 		//
 		+ "`nickName` varchar(20) NOT NULL,\n"
 		//

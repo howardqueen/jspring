@@ -4,8 +4,13 @@
 	<groupId>com.github.howardqueen</groupId>
 	<artifactId>jspring-utils</artifactId>
 	<version>0.0.1</version>
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	<properties>  
+        <!-- 文件拷贝时的编码 -->  
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>  
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>  
+        <!-- 编译时的编码 -->  
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>  
+		<!-- 其它 -->
 		<project.build.source>1.8</project.build.source>
 		<project.build.target>1.8</project.build.target>
 		<github.global.server>github</github.global.server>

@@ -192,7 +192,7 @@ public class Dao<T> {
 		this.oriTableName = Strings.isNullOrEmpty(table.name()) ? domainClass.getSimpleName() : table.name();
 		if (!isPartitionDateTable && !Strings.isNullOrEmpty(table.schema())) {
 			log.info("CREATE TABLE [" + this.oriTableName + "] ...");
-			this.createIfNotExists(table.schema(), null);
+			this.createIfNotExists(null);
 		}
 	}
 
@@ -221,7 +221,7 @@ public class Dao<T> {
 		}
 		if (!isPartitionDateTable && !Strings.isNullOrEmpty(table.schema())) {
 			log.info("CREATE TABLE [" + this.oriTableName + "] ...");
-			this.createIfNotExists(table.schema(), null);
+			this.createIfNotExists(null);
 		}
 	}
 
@@ -843,13 +843,17 @@ public class Dao<T> {
 		jdbcTemplate.execute(sql);
 	}
 
-	public void createIfNotExists(String bodySQL, DateTime partitionDate) {
+	public void createIfNotExists(DateTime partitionDate) {
+		Table table = domainClass.getAnnotation(Table.class);
+		if (null == table || Strings.isNullOrEmpty(table.schema())) {
+			throw Exceptions.newInstance(domainClass.getName() + "'s [Annotation]Table.schema is null or empty.");
+		}
 		StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
 		// sb.append('`');
 		sb.append(getTableName(partitionDate));
 		// sb.append('`');
 		sb.append("(");
-		sb.append(bodySQL);
+		sb.append(table.schema());
 		sb.append(")ENGINE=MyISAM DEFAULT CHARSET=UTF8;");
 		String sql = sb.toString();
 		log.debug("SQL(CREATE):" + sql);

@@ -55,7 +55,7 @@ public class IPMobileLocator {
     private static Strings catName = Strings.newSubstringAnalyzer("catName:'", "'");
     private static Strings carrier = Strings.newSubstringAnalyzer("carrier:'", "'");
 
-    public static MobileLocation getMobileLocation(String mobile) {
+    public static MobileLocation getMobileLocation(String mobile, Encodings readAsEncoding) {
         //https://tcc.taobao.com/cc/json/mobile_tel_segment.htm?tel=15850781443
         /*
         __GetZoneResult_ = {
@@ -68,10 +68,12 @@ public class IPMobileLocator {
         	carrier:'江苏移动'
         }
          */
-        WebClientArgs wa = new WebClientArgs("https://tcc.taobao.com/cc/json/mobile_tel_segment.htm?tel=" + mobile);
+        WebClientArgs wa = new WebClientArgs(
+                "https://tcc.taobao.com/cc/json/mobile_tel_segment.htm?tel=" + mobile.substring(0, 7) + "0000");
         wa.addProperty(RequestProperties.userAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537");
+        wa.addProperty(RequestProperties.charset, Encodings.GBK.value);
         wa.responseEncoding = Encodings.GBK;
-        wa.readAsEncoding = Encodings.UTF8;
+        wa.readAsEncoding = readAsEncoding;
         String json = WebClient.get(wa);
         String[] t = Strings.getSubstrings(json, province, catName, carrier);
         MobileLocation r = new MobileLocation();

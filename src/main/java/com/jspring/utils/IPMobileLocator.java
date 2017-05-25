@@ -70,8 +70,8 @@ public class IPMobileLocator {
          */
         WebClientArgs wa = new WebClientArgs("https://tcc.taobao.com/cc/json/mobile_tel_segment.htm?tel=" + mobile);
         wa.addProperty(RequestProperties.userAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537");
-        // wa.readAsEncoding = Encodings.GBK;
         wa.responseEncoding = Encodings.GBK;
+        wa.readAsEncoding = Encodings.UTF8;
         String json = WebClient.get(wa);
         String[] t = Strings.getSubstrings(json, province, catName, carrier);
         MobileLocation r = new MobileLocation();

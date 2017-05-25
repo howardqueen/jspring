@@ -52,7 +52,7 @@ public class ServerManager {
 			if (Strings.isNullOrEmpty(conf.host)) {
 				throw Exceptions.newNullArgumentException("[Properties]server." + serverName + ".host");
 			}
-			conf.port = Strings.parseInt(environment.getProperty("server." + serverName + ".host"), 0);
+			conf.port = Strings.parseInt(environment.getProperty("server." + serverName + ".port"), 0);
 			conf.user = environment.getProperty("server." + serverName + ".user");
 			conf.password = environment.getProperty("server." + serverName + ".password");
 			//

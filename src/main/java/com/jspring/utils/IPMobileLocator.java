@@ -7,6 +7,9 @@ import com.jspring.net.WebClient.WebClientArgs;
 
 public class IPMobileLocator {
 
+    private IPMobileLocator() {
+    }
+
     public static class IPLocation {
         public String ip;
         public String country;
@@ -17,14 +20,14 @@ public class IPMobileLocator {
         public String isp;
     }
 
-    Strings country = Strings.newSubstringAnalyzer("\"country\":\"", '"');
-    Strings area = Strings.newSubstringAnalyzer("\"area\":\"", '"');
-    Strings region = Strings.newSubstringAnalyzer("\"region\":\"", '"');
-    Strings city = Strings.newSubstringAnalyzer("\"city\":\"", '"');
-    Strings county = Strings.newSubstringAnalyzer("\"county\":\"", '"');
-    Strings isp = Strings.newSubstringAnalyzer("\"isp\":\"", '"');
+    private static Strings country = Strings.newSubstringAnalyzer("\"country\":\"", '"');
+    private static Strings area = Strings.newSubstringAnalyzer("\"area\":\"", '"');
+    private static Strings region = Strings.newSubstringAnalyzer("\"region\":\"", '"');
+    private static Strings city = Strings.newSubstringAnalyzer("\"city\":\"", '"');
+    private static Strings county = Strings.newSubstringAnalyzer("\"county\":\"", '"');
+    private static Strings isp = Strings.newSubstringAnalyzer("\"isp\":\"", '"');
 
-    public IPLocation getIPLocation(String ip) {
+    public static IPLocation getIPLocation(String ip) {
         WebClientArgs wa = new WebClientArgs("http://ip.taobao.com/service/getIpInfo.php?ip=" + ip);
         wa.addProperty(RequestProperties.userAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537");
         String json = WebClient.get(wa);
@@ -47,11 +50,11 @@ public class IPMobileLocator {
         public String carrier;
     }
 
-    private Strings province = Strings.newSubstringAnalyzer("province:'", "'");
-    private Strings catName = Strings.newSubstringAnalyzer("catName:'", "'");
-    private Strings carrier = Strings.newSubstringAnalyzer("carrier:'", "'");
+    private static Strings province = Strings.newSubstringAnalyzer("province:'", "'");
+    private static Strings catName = Strings.newSubstringAnalyzer("catName:'", "'");
+    private static Strings carrier = Strings.newSubstringAnalyzer("carrier:'", "'");
 
-    public MobileLocation getMobileLocation(String mobile) {
+    public static MobileLocation getMobileLocation(String mobile) {
         //https://tcc.taobao.com/cc/json/mobile_tel_segment.htm?tel=15850781443
         /*
         __GetZoneResult_ = {

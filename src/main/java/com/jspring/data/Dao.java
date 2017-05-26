@@ -241,7 +241,14 @@ public class Dao<T> {
 					sb.append(',');
 					sb.append(' ');
 				}
-				sb.append(getColumnSelectName(f));
+				String c = getColumnSelectName(f);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 			}
 			sb.append(" FROM ");
 			_selectSQL = sb.toString();
@@ -450,7 +457,14 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(dw.column));
+				String c = getColumnName(dw.column);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 				sb.append(' ');
 				sb.append(dw.operator.operator);
 				sb.append(' ');
@@ -469,7 +483,14 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(i.column));
+				String c = getColumnName(i.column);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 				sb.append(' ');
 				sb.append(i.type.toString());
 			}
@@ -495,7 +516,14 @@ public class Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			sb.append(getColumnName(dw.column));
+			String c = getColumnName(dw.column);
+			if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+				sb.append('`');
+				sb.append(c);
+				sb.append('`');
+			} else {
+				sb.append(c);
+			}
 			sb.append(' ');
 			sb.append(dw.operator.operator);
 			sb.append(' ');
@@ -523,7 +551,14 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(dw.column));
+				String c = getColumnName(dw.column);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 				sb.append(' ');
 				sb.append(dw.operator.operator);
 				sb.append(' ');
@@ -541,7 +576,14 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(o.column);
+				String c = getColumnName(o.column);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 				sb.append(' ');
 				sb.append(o.type.toString());
 			}
@@ -558,7 +600,14 @@ public class Dao<T> {
 	public T findOne(String idValue, DateTime partitionDate) {
 		StringBuilder sb = new StringBuilder(getSelectSQL() + getTableName(partitionDate));
 		sb.append(" WHERE ");
-		sb.append(getIdColumnName());
+		String c = getIdColumnName();
+		if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+			sb.append('`');
+			sb.append(c);
+			sb.append('`');
+		} else {
+			sb.append(c);
+		}
 		sb.append(' ');
 		sb.append(Operators.Equal.operator);
 		sb.append(' ');
@@ -597,7 +646,14 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(f));
+				String c = getColumnName(f);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 			}
 			sb.append(") VALUES(");
 			isAppend = false;
@@ -655,7 +711,14 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(f));
+				String c = getColumnName(f);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 			}
 			sb.append(") VALUES(");
 			isAppend = false;
@@ -697,22 +760,35 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(f));
+				String c = getColumnName(f);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 				sb.append(' ');
 				sb.append('=');
 				sb.append(' ');
 				sb.append(convert2SQL(f, entity));
 			}
 			sb.append(" WHERE ");
-			sb.append(getIdColumnName());
+			String c = getIdColumnName();
+			if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+				sb.append('`');
+				sb.append(c);
+				sb.append('`');
+			} else {
+				sb.append(c);
+			}
 			sb.append(' ');
 			sb.append('=');
 			sb.append(' ');
 			sb.append('"');
 			sb.append(idValue);
 			sb.append('"');
-			int c = jdbcTemplate.update(sb.toString());
-			if (c <= 0) {
+			if (jdbcTemplate.update(sb.toString()) <= 0) {
 				return null;
 			}
 			return findOne(String.valueOf(domainClass.getField(getIdColumnName()).get(entity)),
@@ -746,14 +822,28 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(f));
+				String c = getColumnName(f);
+				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+					sb.append('`');
+					sb.append(c);
+					sb.append('`');
+				} else {
+					sb.append(c);
+				}
 				sb.append(' ');
 				sb.append('=');
 				sb.append(' ');
 				sb.append(convert2SQL(f, entity));
 			}
 			sb.append(" WHERE ");
-			sb.append(getIdColumnName());
+			String c = getIdColumnName();
+			if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+				sb.append('`');
+				sb.append(c);
+				sb.append('`');
+			} else {
+				sb.append(c);
+			}
 			sb.append(' ');
 			sb.append('=');
 			sb.append(' ');
@@ -791,7 +881,14 @@ public class Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			sb.append(getColumnName(dw.column));
+			String c = getColumnName(dw.column);
+			if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+				sb.append('`');
+				sb.append(c);
+				sb.append('`');
+			} else {
+				sb.append(c);
+			}
 			sb.append(' ');
 			sb.append(dw.operator.operator);
 			sb.append(' ');
@@ -807,7 +904,14 @@ public class Dao<T> {
 		StringBuilder sb = new StringBuilder("DELETE FROM ");
 		sb.append(getTableName(partitionDate));
 		sb.append(" WHERE ");
-		sb.append(getIdColumnName());
+		String c = getIdColumnName();
+		if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
+			sb.append('`');
+			sb.append(c);
+			sb.append('`');
+		} else {
+			sb.append(c);
+		}
 		sb.append(' ');
 		sb.append(Operators.Equal.operator);
 		sb.append(' ');

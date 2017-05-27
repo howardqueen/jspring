@@ -15,19 +15,16 @@ public class SecurityUserDao<T extends SecurityUser> extends Dao<T> {
 	}
 
 	public T findByUserName(String userName) {
-		return this.findOne(new DaoWhere("userName", Operators.Equal, userName));
+		return this.findOne(new DaoWhere(SecurityUser.Columns.userName, Operators.Equal, userName));
 	}
 
 	public List<SecurityRole> findRoles(Long userId) {
 		if (userId == 0) {
 			return SecurityRole.ADMIN_ROLES;
 		}
-		return findAll(SecurityRole.class,
-				//
-				"select r.roleId, r.roleName from SECURITY_ROLES r"
-						//
-						+ " left join SECURITY_USER_ROLES ur on r.roleId = ur.roleId"
-						//
+		return findAll(SecurityRole.class, //
+				"select r.roleId, r.roleName from SECURITY_ROLES r"//
+						+ " left join SECURITY_USER_ROLES ur on r.roleId = ur.roleId"//
 						+ " where ur.userId = ?",
 				userId);
 	}

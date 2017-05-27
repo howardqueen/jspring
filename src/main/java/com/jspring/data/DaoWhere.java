@@ -12,11 +12,15 @@ import com.jspring.Strings;
 public class DaoWhere {
 
 	public static enum Operators {
-
-		Equal("eq", "="), NotEqual("ne", "!="), Smaller("sm", "<"), SmallerOrEqual("se", "<="), Greater("gr",
-				">"), GreaterOrEqual("ge", ">="), Like("lk", "LIKE");// ,
-																		// Between("between",
-																		// "BETWEEN");
+		Equal("eq", "="), //
+		NotEqual("ne", "!="), //
+		Smaller("sm", "<"), //
+		SmallerOrEqual("se", "<="), //
+		Greater("gr", ">"), //
+		GreaterOrEqual("ge", ">="), //
+		Like("lk", "LIKE");// ,
+							// Between("between",
+							// "BETWEEN");
 
 		public final String shortName;
 		public final String operator;
@@ -46,8 +50,14 @@ public class DaoWhere {
 	public final Operators operator;
 	public final String value;
 
-	public DaoWhere(String column, Operators operator, String value) {
+	private DaoWhere(String column, Operators operator, String value) {
 		this.column = column;
+		this.operator = operator;
+		this.value = value;
+	}
+
+	public DaoWhere(Enum<?> column, Operators operator, String value) {
+		this.column = column.toString();
 		this.operator = operator;
 		this.value = value;
 	}

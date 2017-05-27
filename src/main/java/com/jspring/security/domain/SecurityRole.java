@@ -8,14 +8,10 @@ import javax.persistence.Table;
 
 import org.springframework.security.core.GrantedAuthority;
 
-@Table(name = "SECURITY_ROLES", catalog = "security",
-		//
-		schema = "`roleId` int(11) NOT NULL AUTO_INCREMENT,\n"
-				//
-				+ "`roleName` varchar(50) NOT NULL,\n"
-				//
-				+ "`nickName` varchar(50) NOT NULL,\n"
-				//
+@Table(name = "SECURITY_ROLES", catalog = "security", //
+		schema = "`roleId` int(11) NOT NULL AUTO_INCREMENT,\n"//
+				+ "`roleName` varchar(50) NOT NULL,\n"//
+				+ "`nickName` varchar(50) NOT NULL,\n"//
 				+ "PRIMARY KEY (`roleId`)")
 public class SecurityRole implements GrantedAuthority {
 
@@ -29,6 +25,10 @@ public class SecurityRole implements GrantedAuthority {
 	}
 
 	private static final long serialVersionUID = 8836282492025026777L;
+
+	public static enum Columns {
+		roleId, roleName, nickName;
+	}
 
 	@Id
 	public Integer roleId;

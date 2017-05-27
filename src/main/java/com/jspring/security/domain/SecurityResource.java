@@ -13,6 +13,10 @@ import javax.persistence.Table;
 				+ "UNIQUE KEY `i_name` (`resourceName`),\n"//
 				+ "UNIQUE KEY `i_url` (`url`,`method`)")
 public class SecurityResource {
+	public static enum Columns {
+		resourceId, resourceName, nickName, url, method;
+	}
+
 	@Id
 	public Integer resourceId;
 	public String resourceName;

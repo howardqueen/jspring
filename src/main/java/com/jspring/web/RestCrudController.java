@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.jspring.Encodings;
 import com.jspring.Exceptions;
 import com.jspring.Strings;
-import com.jspring.data.Dao;
 import com.jspring.data.WebDao;
 import com.jspring.data.CrudColumnInfo;
 import com.jspring.data.DaoOrder;
@@ -279,10 +278,10 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		try {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			Dao<?> dao = getDao(domain, request);
+			WebDao<?> dao = getDao(domain, request);
 			RestPage p = new RestPage();
 			p.total = dao.countAll(wheres);
-			p.rows = dao.findAll(page, size, wheres, DaoOrder.fromJoinStrings(order));
+			p.rows = dao.findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
 			//
 			p.size = size;
 			p.page = page;
@@ -369,8 +368,8 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		try {
 			RestResult r = new RestResult();
-			r.content = getDao(domain, request).findOne(DaoWhere.fromJoinStrings(filters),
-					DaoOrder.fromJoinStrings(order));
+			r.content = getDao(domain, request).findOne(DaoOrder.fromJoinStrings(order),
+					DaoWhere.fromJoinStrings(filters));
 			//
 			r.status = 200;
 			r.path = request.getRequestURI();
@@ -495,8 +494,8 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) throws IOException {
 		try {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			Dao<?> dao = getDao(domain, request);
-			List<?> rows = dao.findAll(page, size, wheres, DaoOrder.fromJoinStrings(order));
+			WebDao<?> dao = getDao(domain, request);
+			List<?> rows = dao.findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
 			WebUtils.setResponse4Csv(response,
 					dao.getCrudView().title + "_" + (Strings.isNullOrEmpty(filters) ? "全部" : filters));
 			PrintWriter writer = response.getWriter();

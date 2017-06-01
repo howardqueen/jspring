@@ -32,11 +32,11 @@ public class WebDao<T> extends Dao<T> {
 
 	private static final Logger log = LoggerFactory.getLogger(WebDao.class);
 
-	public static <E> E convertFrom(Class<E> domainClass, HttpServletRequest request) {
+	public static <E> E parseEntity(Class<E> domainClass, HttpServletRequest request) {
 		try {
 			E domain = domainClass.newInstance();
 			for (Field f : domainClass.getFields()) {
-				String cn = getColumnName(f);
+				String cn = getSqlColumnNickName(f);
 				String value = request.getParameter(cn);
 				if (Strings.isNullOrEmpty(value)) {
 					Column cl = f.getAnnotation(Column.class);
@@ -79,8 +79,8 @@ public class WebDao<T> extends Dao<T> {
 		}
 	}
 
-	public T convertFrom(HttpServletRequest request) {
-		return convertFrom(domainClass, request);
+	public T parseEntity(HttpServletRequest request) {
+		return parseEntity(domainClass, request);
 	}
 
 	protected String getTableName(HttpServletRequest request) {
@@ -130,7 +130,7 @@ public class WebDao<T> extends Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(getColumnName(f));
+				sb.append(getSqlColumnNickName(f));
 			}
 			sb.append(") VALUES(");
 			isAppend = false;
@@ -178,8 +178,9 @@ public class WebDao<T> extends Dao<T> {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public int insertCheckNull(HttpServletRequest request) {
-		return insert(convertFrom(request));
+		return insert(parseEntity(request));
 	}
 
 	public int insert(HttpServletRequest request) {
@@ -201,7 +202,7 @@ public class WebDao<T> extends Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			sb.append(getColumnName(f));
+			sb.append(getSqlColumnNickName(f));
 		}
 		sb.append(") VALUES(");
 		isAppend = false;
@@ -250,7 +251,7 @@ public class WebDao<T> extends Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			sb.append(getColumnName(f));
+			sb.append(getSqlColumnNickName(f));
 			sb.append(' ');
 			sb.append('=');
 			sb.append(' ');
@@ -292,7 +293,7 @@ public class WebDao<T> extends Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			sb.append(getColumnName(f));
+			sb.append(getSqlColumnNickName(f));
 			sb.append(' ');
 			sb.append('=');
 			sb.append(' ');
@@ -312,7 +313,7 @@ public class WebDao<T> extends Dao<T> {
 	}
 
 	public int updateCheckNull(HttpServletRequest request, String idValue) {
-		return update(convertFrom(request), idValue);
+		return update(parseEntity(request), idValue);
 	}
 
 }

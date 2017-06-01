@@ -59,33 +59,33 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	//////////////////////////////////////////////////
-	///登录页设置
+	/// 登录页设置
 	//////////////////////////////////////////////////
 	public static final String[] SKIP_URLS = { "/favicon.ico", "/easyui/**", "/js/**", "/css/**" };
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http.authorizeRequests()
-				//允许静态资源访问
+				// 允许静态资源访问
 				.antMatchers(SKIP_URLS).permitAll()
-				//开启其它资源授权
+				// 开启其它资源授权
 				.anyRequest().authenticated()
-				//设置登陆地址
+				// 设置登陆地址
 				.and().formLogin().loginPage("/login").permitAll()
-				//设置登出地址
+				// 设置登出地址
 				.and().logout().permitAll()
-				//加入自定义过滤器
+				// 加入自定义过滤器
 				.and().addFilterAfter(getSecurityFilter(), FilterSecurityInterceptor.class)
-				//暂停防CSRF攻击
+				// 暂停防CSRF攻击
 				.csrf().disable()
-				//允许在IFRAME中嵌入展示
+				// 允许在IFRAME中嵌入展示
 				.headers().frameOptions().disable();
 	}
 
 	//////////////////////////////////////////////////
-	///密码加盐处理
+	/// 密码加盐处理
 	//////////////////////////////////////////////////
-	private static final String PASSWORD_SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";//盐值
+	private static final String PASSWORD_SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";// 盐值
 	public static final String PASSWORD_DEFAULT = "e10adc3949ba59abbe56e057f20f883e";
 
 	protected static final class MyPasswordEncoder implements PasswordEncoder {
@@ -93,7 +93,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		private final PasswordEncoder encoder = new StandardPasswordEncoder(PASSWORD_SITE_WIDE_SECRET);
 
 		public String encode(CharSequence pwd) {
-			if (pwd.toString() == PASSWORD_DEFAULT) {//初始密码123456
+			if (pwd.toString() == PASSWORD_DEFAULT) {// 初始密码123456
 				return pwd.toString();
 			}
 			return encoder.encode(pwd);
@@ -104,7 +104,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				if (pwd1.length() == 0 || Strings.isNullOrEmpty(pwd2)) {
 					return false;
 				}
-				if (pwd1.toString().equals(PASSWORD_DEFAULT) && pwd2.equals(PASSWORD_DEFAULT)) {//123456
+				if (pwd1.toString().equals(PASSWORD_DEFAULT) && pwd2.equals(PASSWORD_DEFAULT)) {// 123456
 					return true;
 				}
 				return encoder.matches(pwd1, pwd2);
@@ -119,7 +119,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	public static final PasswordEncoder PASSWORD_ENCODER = new MyPasswordEncoder();
 
 	//////////////////////////////////////////////////
-	///密码验证
+	/// 密码验证
 	//////////////////////////////////////////////////
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -127,7 +127,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	//////////////////////////////////////////////////
-	///REPOSITORY BEANS
+	/// REPOSITORY BEANS
 	//////////////////////////////////////////////////
 	@Autowired
 	protected DataManager dataManager;

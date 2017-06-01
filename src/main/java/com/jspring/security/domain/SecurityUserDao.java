@@ -22,7 +22,7 @@ public class SecurityUserDao<T extends SecurityUser> extends Dao<T> {
 		if (userId == 0) {
 			return SecurityRole.ADMIN_ROLES;
 		}
-		return findAll(SecurityRole.class, //
+		return findAllBySQL(SecurityRole.class, //
 				"select r.roleId, r.roleName from SECURITY_ROLES r"//
 						+ " left join SECURITY_USER_ROLES ur on r.roleId = ur.roleId"//
 						+ " where ur.userId = ?",
@@ -30,7 +30,7 @@ public class SecurityUserDao<T extends SecurityUser> extends Dao<T> {
 	}
 
 	public List<SecurityRole> findRoles(Integer resourceId) {
-		return findAll(SecurityRole.class,
+		return findAllBySQL(SecurityRole.class,
 				//
 				"select r.roleId, r.roleName from SECURITY_ROLES r"
 						//

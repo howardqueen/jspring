@@ -33,7 +33,22 @@ public class Dao<T> {
 
 	private static final Logger log = LoggerFactory.getLogger(Dao.class);
 
-	protected static String getColumnSelectName(Field f) {
+	private SimpleDao<T> simpleDao;
+
+	public SimpleDao<T> getSimpleDao() {
+		if (null == simpleDao) {
+			simpleDao = new SimpleDao<>(this);
+		}
+		return simpleDao;
+	}
+
+	/**
+	 * 获取含表达式的列名，用于计算且获取它的值
+	 * 
+	 * @param f
+	 * @return
+	 */
+	public static String getSqlColumnValueName(Field f) {
 		Column column = f.getAnnotation(Column.class);
 		if (null == column) {
 			return f.getName();
@@ -44,7 +59,13 @@ public class Dao<T> {
 		return f.getName();
 	}
 
-	protected static String getColumnName(Field f) {
+	/**
+	 * 获取不含表达式的列名（别名部分），仅用于获取它的值
+	 * 
+	 * @param f
+	 * @return
+	 */
+	public static String getSqlColumnNickName(Field f) {
 		Column column = f.getAnnotation(Column.class);
 		if (null == column) {
 			return f.getName();
@@ -55,13 +76,57 @@ public class Dao<T> {
 		return f.getName();
 	}
 
+	/**
+	 * 获取映射到SQL的值
+	 * 
+	 * @param f
+	 * @param entity
+	 * @return
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
+	public static String getSqlValue(Field f, Object entity) throws IllegalArgumentException, IllegalAccessException {
+		Object obj = f.get(entity);
+		if (null == obj) {
+			Column cl = f.getAnnotation(Column.class);
+			if (null == cl || cl.nullable()) {// Nullable
+				return "NULL";
+			}
+			switch (f.getType().getSimpleName()) {
+			case ("String"):
+				return "''";
+			case ("Integer"):
+				return "'0'";
+			case ("Long"):
+				return "'0'";
+			case ("Short"):
+				return "'0'";
+			case ("Double"):
+				return "'0'";
+			case ("Date"):
+				return '"' + DateTime.getNow().toString() + '"';
+			case ("Float"):
+				return "'0'";
+			case ("Boolean"):
+				return "'0'";
+			default:
+				throw new RuntimeException("BaseDao.convert2SQL(): Cannot convert field to SQL object for "
+						+ entity.getClass().getSimpleName() + "." + f.getType().getSimpleName());
+			}
+		}
+		if (f.getType().getSimpleName().equals("Date")) {
+			return '"' + (new DateTime((Date) obj).toString()) + '"';
+		}
+		return '"' + String.valueOf(obj) + '"';
+	}
+
 	//////////////////
 	///
 	//////////////////
-	public final boolean isPartitionDateTable;
-	protected final JdbcTemplate jdbcTemplate;
 	protected final Class<T> domainClass;
 	protected final String oriTableName;
+	protected final JdbcTemplate jdbcTemplate;
+	protected final boolean isPartitionDateTable;
 
 	//////////////////
 	///
@@ -106,7 +171,7 @@ public class Dao<T> {
 		return oriTableName + "_" + partitionDate.toShortDateString();
 	}
 
-	public DateTime getPartitionDate(T entity)
+	protected DateTime getPartitionDate(T entity)
 			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		if (!isPartitionDateTable) {
 			return null;
@@ -150,14 +215,14 @@ public class Dao<T> {
 		if (null == getIdColumn()) {
 			return _idColumnName;
 		}
-		_idColumnName = getColumnName(getIdColumn());
+		_idColumnName = getSqlColumnNickName(getIdColumn());
 		return _idColumnName;
 	}
 
 	private boolean _isIdGenerateIdentityInit = false;
 	private boolean _isIdGenerateIdentity = false;
 
-	public boolean isIdGenerateIdentity() {
+	protected boolean isIdGenerateIdentity() {
 		if (_isIdGenerateIdentityInit) {
 			return _isIdGenerateIdentity;
 		}
@@ -241,7 +306,7 @@ public class Dao<T> {
 					sb.append(',');
 					sb.append(' ');
 				}
-				String c = getColumnSelectName(f);
+				String c = getSqlColumnValueName(f);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -256,9 +321,9 @@ public class Dao<T> {
 		return _selectSQL;
 	}
 
-	protected String getColumnName(String fieldName) {
+	protected String getSqlColumnNickName(String fieldName) {
 		try {
-			return getColumnName(domainClass.getField(fieldName));
+			return getSqlColumnNickName(domainClass.getField(fieldName));
 		} catch (NoSuchFieldException | SecurityException e) {
 			throw new RuntimeException(e.getClass().getName() + ":" + e.getMessage());
 		}
@@ -323,11 +388,11 @@ public class Dao<T> {
 	///
 	//////////////////
 	public List<T> findAllBySQL(String sql, Object... args) {
-		return findAll(domainClass, sql, args);
+		return findAllBySQL(domainClass, sql, args);
 	}
 
 	public T findOneBySQL(String sql, Object... args) {
-		return findOne(domainClass, sql, args);
+		return findOneBySQL(domainClass, sql, args);
 	}
 
 	public int execute(String sql, Object... args) {
@@ -337,47 +402,12 @@ public class Dao<T> {
 	//////////////////
 	///
 	//////////////////
-	public int countAll(String sql, Object... args) {
+	public int countAllBySQL(String sql, Object... args) {
 		log.debug("COUNT_ALL: " + sql);
 		return jdbcTemplate.queryForObject(sql, args, Long.class).intValue();
 	}
 
-	protected String convert2SQL(Field f, T entity) throws IllegalArgumentException, IllegalAccessException {
-		Object obj = f.get(entity);
-		if (null == obj) {
-			Column cl = f.getAnnotation(Column.class);
-			if (null == cl || cl.nullable()) {// Nullable
-				return "NULL";
-			}
-			switch (f.getType().getSimpleName()) {
-			case ("String"):
-				return "''";
-			case ("Integer"):
-				return "'0'";
-			case ("Long"):
-				return "'0'";
-			case ("Short"):
-				return "'0'";
-			case ("Double"):
-				return "'0'";
-			case ("Date"):
-				return '"' + DateTime.getNow().toString() + '"';
-			case ("Float"):
-				return "'0'";
-			case ("Boolean"):
-				return "'0'";
-			default:
-				throw new RuntimeException("BaseDao.convert2SQL(): Cannot convert field to SQL object for "
-						+ domainClass.getSimpleName() + "." + f.getType().getSimpleName());
-			}
-		}
-		if (f.getType().getSimpleName().equals("Date")) {
-			return '"' + (new DateTime((Date) obj).toString()) + '"';
-		}
-		return '"' + String.valueOf(obj) + '"';
-	}
-
-	public <E> List<E> findAll(final Class<E> domainClass, String sql, Object... args) {
+	public <E> List<E> findAllBySQL(final Class<E> domainClass, String sql, Object... args) {
 		log.debug("FIND_ALL: " + sql);
 		return jdbcTemplate.query(sql, args, new RowMapper<E>() {
 			@Override
@@ -387,28 +417,28 @@ public class Dao<T> {
 					for (Field f : domainClass.getFields()) {
 						switch (f.getType().getSimpleName()) {
 						case ("String"):
-							f.set(domain, rs.getString(getColumnName(f)));
+							f.set(domain, rs.getString(getSqlColumnNickName(f)));
 							continue;
 						case ("Integer"):
-							f.set(domain, rs.getInt(getColumnName(f)));
+							f.set(domain, rs.getInt(getSqlColumnNickName(f)));
 							continue;
 						case ("Long"):
-							f.set(domain, rs.getLong(getColumnName(f)));
+							f.set(domain, rs.getLong(getSqlColumnNickName(f)));
 							continue;
 						case ("Date"):
-							f.set(domain, rs.getTimestamp(getColumnName(f)));
+							f.set(domain, rs.getTimestamp(getSqlColumnNickName(f)));
 							continue;
 						case ("Short"):
-							f.set(domain, rs.getShort(getColumnName(f)));
+							f.set(domain, rs.getShort(getSqlColumnNickName(f)));
 							continue;
 						case ("Double"):
-							f.set(domain, rs.getDouble(getColumnName(f)));
+							f.set(domain, rs.getDouble(getSqlColumnNickName(f)));
 							continue;
 						case ("Float"):
-							f.set(domain, rs.getFloat(getColumnName(f)));
+							f.set(domain, rs.getFloat(getSqlColumnNickName(f)));
 							continue;
 						case ("Boolean"):
-							f.set(domain, rs.getBoolean(getColumnName(f)));
+							f.set(domain, rs.getBoolean(getSqlColumnNickName(f)));
 							continue;
 						default:
 							log.warn("BaseDao.findAll(): Cannot convert field from database for "
@@ -424,23 +454,35 @@ public class Dao<T> {
 		});
 	}
 
-	public <E> E findOne(Class<E> domainClass, String sql, Object... args) {
-		List<E> list = findAll(domainClass, sql, args);
+	public <E> E findOneBySQL(Class<E> domainClass, String sql, Object... args) {
+		List<E> list = findAllBySQL(domainClass, sql, args);
 		return list.size() > 0 ? list.get(0) : null;
 	}
 
 	//////////////////
-	///
+	/// RETRIEVE LIST
 	//////////////////
 	public List<T> findAll(int page, int size) {
-		return findAll(page, size, null, null);
+		return findAll(page, size, new DaoOrder[0]);
 	}
 
 	public List<T> findAll(int page, int size, DaoWhere... wheres) {
-		return findAll(page, size, wheres, null);
+		return findAll(page, size, new DaoOrder[0], wheres);
 	}
 
-	public List<T> findAll(int page, int size, DaoWhere[] wheres, DaoOrder[] orders) {
+	public List<T> findAll(int page, int size, DaoOrder order, DaoWhere... wheres) {
+		return findAll(page, size, new DaoOrder[] { order }, wheres);
+	}
+
+	/**
+	 * 
+	 * @param page
+	 * @param size
+	 * @param orders
+	 * @param wheres
+	 * @return
+	 */
+	public List<T> findAll(int page, int size, DaoOrder[] orders, DaoWhere... wheres) {
 		if (page <= 0) {
 			page = 1;
 		}
@@ -457,7 +499,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				String c = getColumnName(dw.column);
+				String c = getSqlColumnNickName(dw.column);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -483,7 +525,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				String c = getColumnName(i.column);
+				String c = getSqlColumnNickName(i.column);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -500,12 +542,21 @@ public class Dao<T> {
 		sb.append(',');
 		sb.append(' ');
 		sb.append(size);
-		return findAll(domainClass, sb.toString());
+		return findAllBySQL(domainClass, sb.toString());
 	}
 
-	public int countAll(DaoWhere[] wheres) {
+	public int countAll() {
+		return countAll(new DaoWhere[0]);
+	}
+
+	/**
+	 * 
+	 * @param wheres
+	 * @return
+	 */
+	public int countAll(DaoWhere... wheres) {
 		if (null == wheres || wheres.length == 0) {
-			return countAll("SELECT COUNT(0) FROM " + getTableName(wheres));
+			return countAllBySQL("SELECT COUNT(0) FROM " + getTableName(wheres));
 		}
 		StringBuilder sb = new StringBuilder("SELECT COUNT(0) FROM " + getTableName(wheres));
 		sb.append(" WHERE ");
@@ -516,7 +567,7 @@ public class Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			String c = getColumnName(dw.column);
+			String c = getSqlColumnNickName(dw.column);
 			if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 				sb.append('`');
 				sb.append(c);
@@ -531,72 +582,33 @@ public class Dao<T> {
 			sb.append(dw.value);
 			sb.append('"');
 		}
-		return countAll(sb.toString());
+		return countAllBySQL(sb.toString());
 	}
 
 	//////////////////
-	///
+	/// RETRIEVE ONE
 	//////////////////
-	public T findOne(DaoWhere[] wheres, DaoOrder[] orders) {
-		StringBuilder sb = new StringBuilder(getSelectSQL() + getTableName(wheres));
-		if (null == wheres || wheres.length == 0) {
-			throw new RuntimeException("Can't find one by call findOne(null)");
-		}
-		if (null != wheres && wheres.length > 0) {
-			sb.append(" WHERE ");
-			boolean isAppend = false;
-			for (DaoWhere dw : wheres) {
-				if (isAppend) {
-					sb.append(" AND ");
-				} else {
-					isAppend = true;
-				}
-				String c = getColumnName(dw.column);
-				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
-					sb.append('`');
-					sb.append(c);
-					sb.append('`');
-				} else {
-					sb.append(c);
-				}
-				sb.append(' ');
-				sb.append(dw.operator.operator);
-				sb.append(' ');
-				sb.append('"');
-				sb.append(dw.value);
-				sb.append('"');
-			}
-		}
-		if (null != orders && orders.length > 0) {
-			sb.append(" ORDER BY ");
-			boolean isAppend = false;
-			for (DaoOrder o : orders) {
-				if (isAppend) {
-					sb.append(", ");
-				} else {
-					isAppend = true;
-				}
-				String c = getColumnName(o.column);
-				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
-					sb.append('`');
-					sb.append(c);
-					sb.append('`');
-				} else {
-					sb.append(c);
-				}
-				sb.append(' ');
-				sb.append(o.type.toString());
-			}
-		}
-		sb.append(" LIMIT 1");
-		List<T> r = findAll(domainClass, sb.toString());
+	public T findOne(DaoWhere... wheres) {
+		List<T> r = findAll(1, 1, new DaoOrder[0], wheres);
 		return r.size() > 0 ? r.get(0) : null;
 	}
 
-	public T findOne(DaoWhere... wheres) {
-		return findOne(wheres, null);
+	public T findOne(DaoOrder order, DaoWhere... wheres) {
+		List<T> r = findAll(1, 1, new DaoOrder[] { order }, wheres);
+		return r.size() > 0 ? r.get(0) : null;
 	}
 
+	public T findOne(DaoOrder[] orders, DaoWhere... wheres) {
+		List<T> r = findAll(1, 1, orders, wheres);
+		return r.size() > 0 ? r.get(0) : null;
+	}
+
+	/**
+	 * 
+	 * @param idValue
+	 * @param partitionDate
+	 * @return
+	 */
 	public T findOne(String idValue, DateTime partitionDate) {
 		StringBuilder sb = new StringBuilder(getSelectSQL() + getTableName(partitionDate));
 		sb.append(" WHERE ");
@@ -615,7 +627,7 @@ public class Dao<T> {
 		sb.append(idValue);
 		sb.append('"');
 		sb.append(" LIMIT 1");
-		List<T> r = findAll(domainClass, sb.toString());
+		List<T> r = findAllBySQL(domainClass, sb.toString());
 		return r.size() > 0 ? r.get(0) : null;
 	}
 
@@ -630,9 +642,15 @@ public class Dao<T> {
 	//////////////////
 	///
 	//////////////////
-	public T insertAndGet(T entity) {
+	/**
+	 * 
+	 * @param entity
+	 * @return
+	 */
+	private T inplaceAndGet(String insertOrReplace, T entity) {
 		try {
-			final StringBuilder sb = new StringBuilder("INSERT INTO ");
+			final StringBuilder sb = new StringBuilder(insertOrReplace);
+			sb.append(" INTO ");
 			sb.append(getTableName(entity));
 			sb.append(" (");
 			boolean isAppend = false;
@@ -646,7 +664,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				String c = getColumnName(f);
+				String c = getSqlColumnNickName(f);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -667,7 +685,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				sb.append(convert2SQL(f, entity));
+				sb.append(getSqlValue(f, entity));
 			}
 			sb.append(')');
 			//
@@ -695,10 +713,24 @@ public class Dao<T> {
 		}
 	}
 
-	public int insert(T entity) {
+	public T insertAndGet(T entity) {
+		return inplaceAndGet("INSERT", entity);
+	}
+
+	public T replaceAndGet(T entity) {
+		return inplaceAndGet("REPLACE", entity);
+	}
+
+	/**
+	 * 
+	 * @param entity
+	 * @return
+	 */
+	private int inplace(String insertOrReplace, T[] entities) {
 		try {
-			final StringBuilder sb = new StringBuilder("INSERT INTO ");
-			sb.append(getTableName(entity));
+			final StringBuilder sb = new StringBuilder(insertOrReplace);
+			sb.append(" INTO ");
+			sb.append(getTableName(entities[0]));
 			sb.append(" (");
 			boolean isAppend = false;
 			for (Field f : domainClass.getFields()) {
@@ -711,7 +743,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				String c = getColumnName(f);
+				String c = getSqlColumnNickName(f);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -720,30 +752,49 @@ public class Dao<T> {
 					sb.append(c);
 				}
 			}
-			sb.append(") VALUES(");
-			isAppend = false;
-			for (Field f : domainClass.getFields()) {
-				if (isIdGenerateIdentity() && f.getName().equals(getIdColumnName())) {
-					continue;
+			sb.append(") VALUES");
+			//
+			for (T entity : entities) {
+				sb.append('(');
+				isAppend = false;
+				for (Field f : domainClass.getFields()) {
+					if (isIdGenerateIdentity() && f.getName().equals(getIdColumnName())) {
+						continue;
+					}
+					if (isAppend) {
+						sb.append(',');
+						sb.append(' ');
+					} else {
+						isAppend = true;
+					}
+					sb.append(getSqlValue(f, entity));
 				}
-				if (isAppend) {
-					sb.append(',');
-					sb.append(' ');
-				} else {
-					isAppend = true;
-				}
-				sb.append(convert2SQL(f, entity));
+				sb.append("),");
 			}
-			sb.append(')');
-			return jdbcTemplate.update(sb.toString());
+			//
+			return jdbcTemplate.update(sb.substring(0, sb.length() - 1));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
+	public int insert(@SuppressWarnings("unchecked") T... entities) {
+		return inplace("INSERT", entities);
+	}
+
+	public int replace(@SuppressWarnings("unchecked") T... entities) {
+		return inplace("REPLACE", entities);
+	}
+
 	//////////////////
 	///
 	//////////////////
+	/**
+	 * 
+	 * @param entity
+	 * @param idValue
+	 * @return
+	 */
 	public T updateAndGet(T entity, String idValue) {
 		try {
 			final StringBuilder sb = new StringBuilder("UPDATE ");
@@ -760,7 +811,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				String c = getColumnName(f);
+				String c = getSqlColumnNickName(f);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -771,7 +822,7 @@ public class Dao<T> {
 				sb.append(' ');
 				sb.append('=');
 				sb.append(' ');
-				sb.append(convert2SQL(f, entity));
+				sb.append(getSqlValue(f, entity));
 			}
 			sb.append(" WHERE ");
 			String c = getIdColumnName();
@@ -806,6 +857,12 @@ public class Dao<T> {
 		}
 	}
 
+	/**
+	 * 
+	 * @param entity
+	 * @param idValue
+	 * @return
+	 */
 	public int update(T entity, String idValue) {
 		try {
 			final StringBuilder sb = new StringBuilder("UPDATE ");
@@ -822,7 +879,7 @@ public class Dao<T> {
 				} else {
 					isAppend = true;
 				}
-				String c = getColumnName(f);
+				String c = getSqlColumnNickName(f);
 				if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 					sb.append('`');
 					sb.append(c);
@@ -833,7 +890,7 @@ public class Dao<T> {
 				sb.append(' ');
 				sb.append('=');
 				sb.append(' ');
-				sb.append(convert2SQL(f, entity));
+				sb.append(getSqlValue(f, entity));
 			}
 			sb.append(" WHERE ");
 			String c = getIdColumnName();
@@ -867,6 +924,11 @@ public class Dao<T> {
 	//////////////////
 	///
 	//////////////////
+	/**
+	 * 
+	 * @param wheres
+	 * @return
+	 */
 	public int deleteAll(DaoWhere... wheres) {
 		StringBuilder sb = new StringBuilder("DELETE FROM ");
 		sb.append(getTableName(wheres));
@@ -881,7 +943,7 @@ public class Dao<T> {
 			} else {
 				isAppend = true;
 			}
-			String c = getColumnName(dw.column);
+			String c = getSqlColumnNickName(dw.column);
 			if (c.indexOf('`') < 0 && c.indexOf(' ') < 0 && c.indexOf('(') < 0) {
 				sb.append('`');
 				sb.append(c);
@@ -900,6 +962,12 @@ public class Dao<T> {
 		return jdbcTemplate.update(sb.toString());
 	}
 
+	/**
+	 * 
+	 * @param idValue
+	 * @param partitionDate
+	 * @return
+	 */
 	public int delete(String idValue, DateTime partitionDate) {
 		StringBuilder sb = new StringBuilder("DELETE FROM ");
 		sb.append(getTableName(partitionDate));

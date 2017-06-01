@@ -9,10 +9,8 @@ import org.springframework.boot.autoconfigure.web.ErrorController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-//import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-//import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.AbstractJsonpResponseBodyAdvice;
 
@@ -38,5 +36,14 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 	public AbstractErrorController basicErrorController(ErrorAttributes errorAttributes) {
 		return new SimpleErrorController(errorAttributes);
 	}
+
+	// @Override
+	// protected void configure(HttpSecurity http) throws Exception {
+	// http
+	// //暂停防CSRF攻击
+	// .csrf().disable()
+	// //允许在IFRAME中嵌入展示
+	// .headers().frameOptions().disable();
+	// }
 
 }

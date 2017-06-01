@@ -111,7 +111,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 				return resource.attributes;
 			}
 		}
-		return ANONYMOUS_ADMIN_AUTHS;//未查询到的配置，默认超级管理员可访问
+		return ANONYMOUS_ADMIN_AUTHS;// 未查询到的配置，默认超级管理员可访问
 	}
 
 	public Collection<ConfigAttribute> getAllConfigAttributes() {

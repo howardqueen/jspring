@@ -33,8 +33,8 @@ public class DaoOrder {
 	public final String column;
 	public final OrderTypes type;
 
-	public DaoOrder(String column) {
-		this.column = column;
+	public DaoOrder(Enum<?> column) {
+		this.column = column.toString();
 		this.type = OrderTypes.Asc;
 	}
 

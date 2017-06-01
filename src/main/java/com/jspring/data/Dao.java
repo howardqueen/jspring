@@ -3,7 +3,6 @@ package com.jspring.data;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
@@ -19,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
@@ -409,49 +407,79 @@ public class Dao<T> {
 
 	public <E> List<E> findAllBySQL(final Class<E> domainClass, String sql, Object... args) {
 		log.debug("FIND_ALL: " + sql);
-		return jdbcTemplate.query(sql, args, new RowMapper<E>() {
-			@Override
-			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
-				try {
-					E domain = domainClass.newInstance();
-					for (Field f : domainClass.getFields()) {
-						switch (f.getType().getSimpleName()) {
-						case ("String"):
-							f.set(domain, rs.getString(getSqlColumnNickName(f)));
-							continue;
-						case ("Integer"):
-							f.set(domain, rs.getInt(getSqlColumnNickName(f)));
-							continue;
-						case ("Long"):
-							f.set(domain, rs.getLong(getSqlColumnNickName(f)));
-							continue;
-						case ("Date"):
-							f.set(domain, rs.getTimestamp(getSqlColumnNickName(f)));
-							continue;
-						case ("Short"):
-							f.set(domain, rs.getShort(getSqlColumnNickName(f)));
-							continue;
-						case ("Double"):
-							f.set(domain, rs.getDouble(getSqlColumnNickName(f)));
-							continue;
-						case ("Float"):
-							f.set(domain, rs.getFloat(getSqlColumnNickName(f)));
-							continue;
-						case ("Boolean"):
-							f.set(domain, rs.getBoolean(getSqlColumnNickName(f)));
-							continue;
-						default:
-							log.warn("BaseDao.findAll(): Cannot convert field from database for "
-									+ domainClass.getSimpleName() + "." + f.getType().getSimpleName());
-							continue;
-						}
+		return jdbcTemplate.query(sql, args, (rs, i) -> {
+			try {
+				E domain = domainClass.newInstance();
+				for (Field f : domainClass.getFields()) {
+					switch (f.getType().getSimpleName()) {
+					case ("String"):
+						f.set(domain, rs.getString(getSqlColumnNickName(f)));
+						continue;
+					case ("Integer"):
+						f.set(domain, rs.getInt(getSqlColumnNickName(f)));
+						continue;
+					case ("Long"):
+						f.set(domain, rs.getLong(getSqlColumnNickName(f)));
+						continue;
+					case ("Date"):
+						f.set(domain, rs.getTimestamp(getSqlColumnNickName(f)));
+						continue;
+					case ("Short"):
+						f.set(domain, rs.getShort(getSqlColumnNickName(f)));
+						continue;
+					case ("Double"):
+						f.set(domain, rs.getDouble(getSqlColumnNickName(f)));
+						continue;
+					case ("Float"):
+						f.set(domain, rs.getFloat(getSqlColumnNickName(f)));
+						continue;
+					case ("Boolean"):
+						f.set(domain, rs.getBoolean(getSqlColumnNickName(f)));
+						continue;
+					default:
+						log.warn("BaseDao.findAll(): Cannot convert field from database for "
+								+ domainClass.getSimpleName() + "." + f.getType().getSimpleName());
+						continue;
 					}
-					return domain;
-				} catch (Exception e) {
-					throw new RuntimeException(e);
 				}
+				return domain;
+			} catch (Exception e) {
+				throw new RuntimeException(e);
 			}
 		});
+	}
+
+	/**
+	 * 返回 List<String>, List<Long> 等类型
+	 * 
+	 * @param domainClass
+	 * @param sql
+	 * @param args
+	 * @return
+	 */
+	public List<?> findBasicTypesBySQL(String sql, Object... args) {
+		log.debug("FIND SIMPLE BY SQL: " + sql);
+		switch (domainClass.getSimpleName()) {
+		case ("String"):
+			return jdbcTemplate.query(sql, args, (r, i) -> r.getString(0));
+		case ("Integer"):
+			return jdbcTemplate.query(sql, args, (r, i) -> Integer.valueOf(r.getInt(0)));
+		case ("Long"):
+			return jdbcTemplate.query(sql, args, (r, i) -> Long.valueOf(r.getLong(0)));
+		case ("Date"):
+			return jdbcTemplate.query(sql, args, (r, i) -> r.getTimestamp(0));
+		case ("Short"):
+			return jdbcTemplate.query(sql, args, (r, i) -> Short.valueOf(r.getShort(0)));
+		case ("Double"):
+			return jdbcTemplate.query(sql, args, (r, i) -> Double.valueOf(r.getDouble(0)));
+		case ("Float"):
+			return jdbcTemplate.query(sql, args, (r, i) -> Float.valueOf(r.getFloat(0)));
+		case ("Boolean"):
+			return jdbcTemplate.query(sql, args, (r, i) -> Boolean.valueOf(r.getBoolean(0)));
+		default:
+			throw Exceptions.newInstance(
+					"Dao.findBasicTypesBySQL(): Cannot convert field from database for " + domainClass.getSimpleName());
+		}
 	}
 
 	public <E> E findOneBySQL(Class<E> domainClass, String sql, Object... args) {

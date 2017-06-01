@@ -466,21 +466,21 @@ public class Dao<T> {
 	public <E> List<E> findBasicTypesBySQL(Class<E> basicType, String sql, Object... args) {
 		switch (basicType.getSimpleName()) {
 		case ("String"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) r.getString(0));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) r.getString(1));
 		case ("Integer"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) Integer.valueOf(r.getInt(0)));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) Integer.valueOf(r.getInt(1)));
 		case ("Long"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) Long.valueOf(r.getLong(0)));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) Long.valueOf(r.getLong(1)));
 		case ("Date"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) r.getTimestamp(0));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) r.getTimestamp(1));
 		case ("Short"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) Short.valueOf(r.getShort(0)));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) Short.valueOf(r.getShort(1)));
 		case ("Double"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) Double.valueOf(r.getDouble(0)));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) Double.valueOf(r.getDouble(1)));
 		case ("Float"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) Float.valueOf(r.getFloat(0)));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) Float.valueOf(r.getFloat(1)));
 		case ("Boolean"):
-			return jdbcTemplate.query(sql, args, (r, i) -> (E) Boolean.valueOf(r.getBoolean(0)));
+			return jdbcTemplate.query(sql, args, (r, i) -> (E) Boolean.valueOf(r.getBoolean(1)));
 		default:
 			throw Exceptions.newInstance(
 					"Dao.findBasicTypesBySQL(): Cannot convert field from database for " + domainClass.getSimpleName());

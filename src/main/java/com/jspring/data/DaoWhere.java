@@ -48,15 +48,15 @@ public class DaoWhere {
 
 	public final String column;
 	public final Operators operator;
-	public final String value;
+	public final Object value;
 
-	private DaoWhere(String column, Operators operator, String value) {
+	private DaoWhere(String column, Operators operator, Object value) {
 		this.column = column;
 		this.operator = operator;
 		this.value = value;
 	}
 
-	public DaoWhere(Enum<?> column, Operators operator, String value) {
+	public DaoWhere(Enum<?> column, Operators operator, Object value) {
 		this.column = column.toString();
 		this.operator = operator;
 		this.value = value;
@@ -107,6 +107,10 @@ public class DaoWhere {
 			}
 		}
 		return ls.toArray(new DaoWhere[0]);
+	}
+
+	public static DaoWhere of(Enum<?> column, Operators operator, Object value) {
+		return new DaoWhere(column.toString(), operator, value);
 	}
 
 }

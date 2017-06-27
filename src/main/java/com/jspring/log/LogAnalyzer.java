@@ -1,5 +1,7 @@
 package com.jspring.log;
 
+import java.util.function.Consumer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,8 +9,6 @@ import com.jspring.Processes;
 import com.jspring.Processes.ConsoleThread;
 import com.jspring.io.Files;
 import com.jspring.io.ITextReader;
-import com.jspring.patterns.behavioral.observers.Event;
-import com.jspring.patterns.behavioral.observers.IEvent;
 
 public final class LogAnalyzer<T> {
 
@@ -33,7 +33,7 @@ public final class LogAnalyzer<T> {
 					result.failedLines++;
 					continue;
 				}
-				actionReadItem.tryFire(this, ali);
+				lineItemConsumer.accept(ali);
 				count++;
 				if (count >= 100000) {
 					result.succLines += count;
@@ -64,7 +64,11 @@ public final class LogAnalyzer<T> {
 		this.parser = parser;
 	}
 
-	public final IEvent<T> actionReadItem = Event.newInstansce();
+	private Consumer<T> lineItemConsumer = null;
+
+	public void setLineItemconsumer(Consumer<T> lineItemConsumer) {
+		this.lineItemConsumer = lineItemConsumer;
+	}
 
 	public StatResult readFile(String filename) {
 		log.info(String.format(" ++ Read %s ...", filename));

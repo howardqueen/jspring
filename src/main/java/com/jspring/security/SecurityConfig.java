@@ -20,8 +20,8 @@ import com.jspring.security.service.SecurityFilter;
 import com.jspring.security.service.SecurityResourceService;
 import com.jspring.security.service.SecurityUserService;
 import com.jspring.Strings;
-import com.jspring.data.Dao;
-import com.jspring.data.DataManager;
+import com.jspring.data.CrudRepository;
+import com.jspring.data.SqlExecutor;
 import com.jspring.security.domain.*;
 
 @Configuration
@@ -130,41 +130,41 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	/// REPOSITORY BEANS
 	//////////////////////////////////////////////////
 	@Autowired
-	protected DataManager dataManager;
+	private SqlExecutor sqlExecutor;
 
 	@Bean
 	public SecurityUserDao<SecurityUser> securityUserRepository() {
-		return new SecurityUserDao<SecurityUser>(dataManager, SecurityUser.class);
+		return new SecurityUserDao<SecurityUser>();
 	}
 
 	@Bean
-	public Dao<SecurityUserRole> securityUserRoleRepository() {
-		return new Dao<SecurityUserRole>(dataManager, SecurityUserRole.class);
+	public CrudRepository<SecurityUserRole> securityUserRoleRepository() {
+		return new CrudRepository<SecurityUserRole>(sqlExecutor, SecurityUserRole.class);
 	}
 
 	@Bean
-	public Dao<SecurityRole> securityRoleRepository() {
-		return new Dao<SecurityRole>(dataManager, SecurityRole.class);
+	public CrudRepository<SecurityRole> securityRoleRepository() {
+		return new CrudRepository<SecurityRole>(sqlExecutor, SecurityRole.class);
 	}
 
 	@Bean
-	public Dao<SecurityRoleMenu> securityRoleMenuRepository() {
-		return new Dao<SecurityRoleMenu>(dataManager, SecurityRoleMenu.class);
+	public CrudRepository<SecurityRoleMenu> securityRoleMenuRepository() {
+		return new CrudRepository<SecurityRoleMenu>(sqlExecutor, SecurityRoleMenu.class);
 	}
 
 	@Bean
-	public Dao<SecurityMenu> securityMenuRepository() {
-		return new Dao<SecurityMenu>(dataManager, SecurityMenu.class);
+	public CrudRepository<SecurityMenu> securityMenuRepository() {
+		return new CrudRepository<SecurityMenu>(sqlExecutor, SecurityMenu.class);
 	}
 
 	@Bean
-	public Dao<SecurityMenuResource> securityMenuResourceRepository() {
-		return new Dao<SecurityMenuResource>(dataManager, SecurityMenuResource.class);
+	public CrudRepository<SecurityMenuResource> securityMenuResourceRepository() {
+		return new CrudRepository<SecurityMenuResource>(sqlExecutor, SecurityMenuResource.class);
 	}
 
 	@Bean
-	public Dao<SecurityResource> securityResourceRepository() {
-		return new Dao<SecurityResource>(dataManager, SecurityResource.class);
+	public CrudRepository<SecurityResource> securityResourceRepository() {
+		return new CrudRepository<SecurityResource>(sqlExecutor, SecurityResource.class);
 	}
 
 	@SuppressWarnings({ "unchecked" })
@@ -172,7 +172,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	public SecurityResourceService securityResourceService() {
 		return new SecurityResourceService(
 				(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"),
-				(Dao<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository"));
+				(CrudRepository<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository"));
 	}
 
 }

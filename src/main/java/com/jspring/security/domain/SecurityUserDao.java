@@ -2,17 +2,16 @@ package com.jspring.security.domain;
 
 import java.util.List;
 
-import com.jspring.data.Dao;
+import com.jspring.data.CrudRepository;
 import com.jspring.data.DaoWhere;
-import com.jspring.data.DataManager;
 import com.jspring.data.DaoWhere.Operators;
 import com.jspring.security.domain.SecurityRole;
 
-public class SecurityUserDao<T extends SecurityUser> extends Dao<T> {
+public class SecurityUserDao<T extends SecurityUser> extends CrudRepository<T> {
 
-	public SecurityUserDao(DataManager dataManager, Class<T> clsOfT) {
-		super(dataManager, clsOfT);
-	}
+	// public SecurityUserDao(DataManager dataManager, Class<T> clsOfT) {
+	// super(dataManager, clsOfT);
+	// }
 
 	public T findByUserName(String userName) {
 		return this.findOne(new DaoWhere(SecurityUser.Columns.userName, Operators.Equal, userName));
@@ -22,7 +21,7 @@ public class SecurityUserDao<T extends SecurityUser> extends Dao<T> {
 		if (userId == 0) {
 			return SecurityRole.ADMIN_ROLES;
 		}
-		return findAllBySQL(SecurityRole.class, //
+		return getSqlExecutor().queryPojos(getMetaEntity().getDatabase(), SecurityRole.class, //
 				"select r.roleId, r.roleName from SECURITY_ROLES r"//
 						+ " left join SECURITY_USER_ROLES ur on r.roleId = ur.roleId"//
 						+ " where ur.userId = ?",
@@ -30,7 +29,7 @@ public class SecurityUserDao<T extends SecurityUser> extends Dao<T> {
 	}
 
 	public List<SecurityRole> findRoles(Integer resourceId) {
-		return findAllBySQL(SecurityRole.class,
+		return getSqlExecutor().queryPojos(getMetaEntity().getDatabase(), SecurityRole.class,
 				//
 				"select r.roleId, r.roleName from SECURITY_ROLES r"
 						//

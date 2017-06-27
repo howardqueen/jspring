@@ -6,15 +6,15 @@ public class RestPage {
 	/**
 	 * Current page
 	 */
-	public int page;
+	public Integer page;
 	/**
 	 * Current page size
 	 */
-	public int size;
+	public Integer size;
 	/**
 	 * Total number
 	 */
-	public int total;
+	public Long total;
 	/**
 	 * 
 	 */

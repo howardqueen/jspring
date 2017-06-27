@@ -89,4 +89,12 @@ public class DaoOrder {
 		return qs;
 	}
 
+	public static DaoOrder of(Enum<?> column, OrderTypes type) {
+		return new DaoOrder(column.toString(), type);
+	}
+
+	public static DaoOrder of(Enum<?> column) {
+		return new DaoOrder(column.toString(), OrderTypes.Asc);
+	}
+
 }

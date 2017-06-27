@@ -2,6 +2,7 @@ package com.jspring.web;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.ws.Holder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,13 +28,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.jspring.Encodings;
+import com.jspring.Environment;
 import com.jspring.Exceptions;
 import com.jspring.Strings;
-import com.jspring.data.WebDao;
 import com.jspring.data.CrudColumnInfo;
+import com.jspring.data.CrudRepository;
+import com.jspring.data.CrudTableInfo;
 import com.jspring.data.DaoOrder;
 import com.jspring.data.DaoWhere;
-import com.jspring.data.DataManager;
+import com.jspring.data.MetaEntity;
+import com.jspring.data.SqlExecutor;
 import com.jspring.date.DateFormats;
 
 @Controller
@@ -51,31 +56,31 @@ public final class RestCrudController implements ApplicationContextAware {
 		context = applicationContext;
 	}
 
-	@Autowired
-	DataManager dataManager;
-
 	protected String getUpperFirstLetter(String domain) {
 		return (char) (domain.charAt(0) - 32) + domain.substring(1);
 	}
 
+	@Autowired
+	private SqlExecutor sqlExecutor;
+
 	@Value("${jspring.web.crud-domain-packages}")
 	String[] domains;
-	private Map<String, WebDao<?>> repositories = new HashMap<>();
+	private Map<String, CrudRepository<?>> repositories = new HashMap<>();
 
-	private WebDao<?> getDao(String domain, HttpServletRequest request) throws Exception {
+	private CrudRepository<?> getDao(String domain, HttpServletRequest request) {
 		if (repositories.containsKey(domain)) {
-			return (WebDao<?>) repositories.get(domain);
+			return (CrudRepository<?>) repositories.get(domain);
 		}
 		synchronized (this) {
 			if (repositories.containsKey(domain)) {
-				return (WebDao<?>) repositories.get(domain);
+				return repositories.get(domain);
 			}
 			String f = domain + "Repository";
 			if (getContext().containsBean(f)) {
 				log.info("LOAD REPOSITORY: " + f);
-				WebDao<?> dao = (WebDao<?>) getContext().getBean(f);
+				CrudRepository<?> dao = (CrudRepository<?>) getContext().getBean(f);
 				repositories.put(domain, dao);
-				return (WebDao<?>) dao;
+				return dao;
 			}
 			Class<?> t = null;
 			for (String d : domains) {
@@ -89,184 +94,92 @@ public final class RestCrudController implements ApplicationContextAware {
 			}
 			if (null == t) {
 				log.debug("DOMAIN NOT EXISTS: " + domain);
-				throw new Exception("DOMAIN NOT EXISTS: " + domain);
+				throw new RuntimeException("DOMAIN NOT EXISTS: " + domain);
 			}
 			@SuppressWarnings({ "rawtypes", "unchecked" })
-			WebDao<?> dao = new WebDao(dataManager, t);
+			CrudRepository<?> dao = new CrudRepository(sqlExecutor, t);
 			repositories.put(domain, dao);
-			return (WebDao<?>) dao;
+			return dao;
 		}
+	}
+
+	private Class<?> getEntityClass(String domain, HttpServletRequest request) {
+		try {
+			for (String d : domains) {
+				String f = d + "." + getUpperFirstLetter(domain);
+				Class<?> t = Class.forName(f);
+				return t;
+			}
+		} catch (Exception e) {
+			throw Exceptions.newInstance(e);
+		}
+		log.debug("DOMAIN NOT EXISTS: " + domain);
+		throw new RuntimeException("DOMAIN NOT EXISTS: " + domain);
 	}
 
 	///////////////////
 	/// CRUD
 	///////////////////
 	@ResponseBody
-	@RequestMapping(path = "crud/{domain}", method = RequestMethod.PUT)
+	@RequestMapping(path = "crud/{domain}", method = RequestMethod.POST)
 	public RestResult create(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
-		try {
-			int c = getDao(domain, request).insert(request);
-			if (c <= 0) {
-				throw new RuntimeException("Rows affected 0");
-			}
-			//
-			RestResult r = new RestResult();
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "CREATE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			// log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+		return WebConfig.responseObject(() -> {
+			CrudRepository<?> dao = getDao(domain, request);
+			return dao.insert(dao.parseEntity((s) -> request.getParameter(s)));
+		}, request, response, RequestMethod.POST);
 	}
 
 	@ResponseBody
-	@RequestMapping(path = "crud/{domain}/{id}", method = RequestMethod.POST)
+	@RequestMapping(path = "crud/{domain}/{id}", method = RequestMethod.PUT)
 	public RestResult update(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
-		try {
-			if (id.indexOf('%') >= 0) {
-				id = URLDecoder.decode(id, Encodings.UTF8.value);
+		Holder<String> hId = new Holder<>();
+		hId.value = id;
+		return WebConfig.responseObject(() -> {
+			if (hId.value.indexOf('%') >= 0) {
+				try {
+					hId.value = URLDecoder.decode(hId.value, Encodings.UTF8.value);
+				} catch (UnsupportedEncodingException e) {
+				}
 			}
-			int c = getDao(domain, request).update(request, id);
-			if (c <= 0) {
-				throw new RuntimeException("Rows affected 0");
-			}
-			//
-			RestResult r = new RestResult();
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "UPDATE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+			return getDao(domain, request).update((s) -> request.getParameter(s), id);
+		}, request, response, RequestMethod.PUT);
 	}
 
 	@ResponseBody
 	@RequestMapping(path = "crud/{domain}/{id}", method = RequestMethod.DELETE)
 	public RestResult delete(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
-		try {
-			if (id.indexOf('%') >= 0) {
-				id = URLDecoder.decode(id, Encodings.UTF8.value);
+		Holder<String> hId = new Holder<>();
+		hId.value = id;
+		return WebConfig.responseObject(() -> {
+			if (hId.value.indexOf('%') >= 0) {
+				try {
+					hId.value = URLDecoder.decode(hId.value, Encodings.UTF8.value);
+				} catch (UnsupportedEncodingException e) {
+				}
 			}
-			WebDao<?> dao = getDao(domain, request);
-			dao.delete(id, dao.getPartitionDate(request));
-			//
-			RestResult r = new RestResult();
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "DELETE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+			CrudRepository<?> dao = getDao(domain, request);
+			return dao.delete(hId.value);
+		}, request, response, RequestMethod.DELETE);
 	}
 
 	@ResponseBody
 	@RequestMapping(path = "crud/{domain}/{id}", method = RequestMethod.GET)
 	public RestResult findOne(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
-		try {
-			if (id.indexOf('%') >= 0) {
-				id = URLDecoder.decode(id, Encodings.UTF8.value);
+		Holder<String> hId = new Holder<>();
+		hId.value = id;
+		return WebConfig.responseObject(() -> {
+			if (hId.value.indexOf('%') >= 0) {
+				try {
+					hId.value = URLDecoder.decode(hId.value, Encodings.UTF8.value);
+				} catch (UnsupportedEncodingException e) {
+				}
 			}
-			RestResult r = new RestResult();
-			WebDao<?> dao = getDao(domain, request);
-			r.content = dao.findOne(id, dao.getPartitionDate(request));
-			//
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "RETRIEVE ONE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+			CrudRepository<?> dao = getDao(domain, request);
+			return dao.findOneById(hId.value);
+		}, request, response, RequestMethod.GET);
 	}
 
 	@ResponseBody
@@ -276,47 +189,17 @@ public final class RestCrudController implements ApplicationContextAware {
 			@RequestParam(value = "filters", defaultValue = "") String filters,
 			@RequestParam(value = "order", defaultValue = "") String order, HttpServletRequest request,
 			HttpServletResponse response) {
-		try {
+		return WebConfig.responseObject(() -> {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			WebDao<?> dao = getDao(domain, request);
+			CrudRepository<?> dao = getDao(domain, request);
 			RestPage p = new RestPage();
 			p.total = dao.countAll(wheres);
 			p.rows = dao.findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
 			//
 			p.size = size;
 			p.page = page;
-			//
-			RestResult r = new RestResult();
-			r.content = p;
-			//
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "RETRIEVE ALL DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+			return p;
+		}, request, response, RequestMethod.GET);
 	}
 
 	///////////////////
@@ -326,164 +209,28 @@ public final class RestCrudController implements ApplicationContextAware {
 	@RequestMapping(path = "cruds/batch/{domain}", method = RequestMethod.DELETE)
 	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
 			HttpServletResponse response) {
-		try {
-			getDao(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters));
-			//
-			RestResult r = new RestResult();
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "BATCH DELETE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+		return WebConfig.responseObject(() -> getDao(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
+				request, response, RequestMethod.GET);
 	}
 
 	@ResponseBody
-	@RequestMapping(path = "cruds/single/{domain}", method = RequestMethod.GET)
+	@RequestMapping(path = "cruds/one/{domain}", method = RequestMethod.GET)
 	public RestResult findOne(@PathVariable String domain,
 			@RequestParam(value = "filters", defaultValue = "") String filters,
 			@RequestParam(value = "order", defaultValue = "") String order, HttpServletRequest request,
 			HttpServletResponse response) {
-		try {
-			RestResult r = new RestResult();
-			r.content = getDao(domain, request).findOne(DaoOrder.fromJoinStrings(order),
-					DaoWhere.fromJoinStrings(filters));
-			//
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "RETRIEVE ONE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+		return WebConfig.responseObject(
+				() -> getDao(domain, request).findOne(DaoOrder.fromJoinStrings(order),
+						DaoWhere.fromJoinStrings(filters)), //
+				request, response, RequestMethod.GET);
 	}
 
 	@ResponseBody
-	@RequestMapping(path = "cruds/check-null/{domain}", method = RequestMethod.PUT)
-	public RestResult createCheckNull(@PathVariable String domain, HttpServletRequest request,
-			HttpServletResponse response) {
-		try {
-			int c = getDao(domain, request).insertCheckNull(request);
-			if (c <= 0) {
-				throw new RuntimeException("Rows affected 0");
-			}
-			//
-			RestResult r = new RestResult();
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "CREATE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
-	}
-
-	@ResponseBody
-	@RequestMapping(path = "cruds/check-null/{domain}/{id}", method = RequestMethod.POST)
-	public RestResult updateCheckNull(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
-			HttpServletResponse response) {
-		try {
-			if (id.indexOf('%') >= 0) {
-				id = URLDecoder.decode(id, Encodings.UTF8.value);
-			}
-			int c = getDao(domain, request).updateCheckNull(request, id);
-			if (c <= 0) {
-				throw new RuntimeException("Rows affected 0");
-			}
-			//
-			RestResult r = new RestResult();
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "UPDATE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
-		}
+	@RequestMapping(path = "cruds/schema/{domain}", method = RequestMethod.GET)
+	public RestResult schema(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
+		return WebConfig.responseObject(
+				() -> MetaEntity.getMetaEntity(getEntityClass(domain, request)).getCrudTableInfo(), //
+				request, response, RequestMethod.GET);
 	}
 
 	@RequestMapping(path = "cruds/export/{domain}", method = RequestMethod.GET)
@@ -494,13 +241,12 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) throws IOException {
 		try {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			WebDao<?> dao = getDao(domain, request);
-			List<?> rows = dao.findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
-			WebUtils.setResponse4Csv(response,
-					dao.getCrudView().title + "_" + (Strings.isNullOrEmpty(filters) ? "全部" : filters));
+			CrudTableInfo cti = MetaEntity.getMetaEntity(getEntityClass(domain, request)).getCrudTableInfo();
+			List<?> rows = getDao(domain, request).findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
+			WebConfig.setResponse4Csv(response, cti.title + "_" + (Strings.isNullOrEmpty(filters) ? "全部" : filters));
 			PrintWriter writer = response.getWriter();
 			boolean isFirst = true;
-			for (CrudColumnInfo c : dao.getCrudView().columns) {
+			for (CrudColumnInfo c : cti.columns) {
 				if (isFirst) {
 					isFirst = false;
 				} else {
@@ -533,51 +279,15 @@ public final class RestCrudController implements ApplicationContextAware {
 				writer.write("\r\n");
 			}
 			writer.flush();
-			log.info("[EXPORT:" + request.getRequestURI() + "][200][SUCC]");
-		} catch (NullPointerException e) {
+			log.info("[EXPORT:" + RequestMethod.GET + ":" + request.getRequestURI() + "][200][SUCC]");
+		} catch (RuntimeException e) {
 			response.getWriter().write(Exceptions.getStackTrace(e));
-			log.warn("[EXPORT:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
+			log.warn("[EXPORT:" + RequestMethod.GET + ":" + request.getRequestURI() + "][500]["
+					+ e.getClass().getSimpleName() + "]" + Environment.NewLine + Exceptions.getStackTrace(e));
 		} catch (Exception e) {
 			response.getWriter().write(e.getClass().getName() + "\r\n" + e.getMessage());
-			log.warn("[EXPORT:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-		}
-	}
-
-	@ResponseBody
-	@RequestMapping(path = "cruds/schema/{domain}", method = RequestMethod.GET)
-	public RestResult schema(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
-		try {
-			RestResult r = new RestResult();
-			r.content = getDao(domain, request).getCrudView();
-			//
-			r.status = 200;
-			r.path = request.getRequestURI();
-			r.error = "SUCCESS";
-			r.message = "RETRIEVE ONE DONE";
-			//
-			WebUtils.setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getRequestURI() + "][200][SUCC]");
-			return r;
-		} catch (NullPointerException e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = Exceptions.getStackTrace(e);
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ Exceptions.getStackTrace(e));
-			return r;
-		} catch (Exception e) {
-			RestResult r = new RestResult();
-			r.status = 500;
-			r.path = request.getRequestURI();
-			r.error = e.getClass().getName();
-			r.message = e.getMessage();
-			WebUtils.setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]" + e.getMessage());
-			return r;
+			log.warn("[EXPORT:" + RequestMethod.GET + ":" + request.getRequestURI() + "][500][" + e.getClass().getName()
+					+ "]" + e.getMessage());
 		}
 	}
 

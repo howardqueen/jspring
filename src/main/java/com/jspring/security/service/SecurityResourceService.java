@@ -19,7 +19,7 @@ import com.jspring.security.domain.SecurityResource;
 import com.jspring.security.domain.SecurityUserDao;
 import com.jspring.security.domain.SecurityRole;
 import com.jspring.Exceptions;
-import com.jspring.data.Dao;
+import com.jspring.data.CrudRepository;
 
 /**
  * 针对各资源获取对应的权限配置
@@ -28,10 +28,10 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 	private static final Logger log = LoggerFactory.getLogger(SecurityResourceService.class);
 
 	private final SecurityUserDao<?> securityUserRepository;
-	private final Dao<SecurityResource> securityResourceRepository;
+	private final CrudRepository<SecurityResource> securityResourceRepository;
 
 	public SecurityResourceService(SecurityUserDao<?> securityUserRepository,
-			Dao<SecurityResource> securityResourceRepository) {
+			CrudRepository<SecurityResource> securityResourceRepository) {
 		this.securityUserRepository = securityUserRepository;
 		this.securityResourceRepository = securityResourceRepository;
 	}

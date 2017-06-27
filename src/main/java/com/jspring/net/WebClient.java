@@ -4,7 +4,6 @@ import com.jspring.Encodings;
 import com.jspring.Environment;
 import com.jspring.Exceptions;
 import com.jspring.Strings;
-import com.jspring.collections.ICallbacks;
 import com.jspring.collections.KeyValue;
 import com.jspring.collections.Percents;
 import com.jspring.web.ContentTypes;
@@ -21,6 +20,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.function.Function;
 
 //import sun.misc.BASE64Encoder;
 
@@ -96,17 +96,19 @@ public final class WebClient {
 			}
 		}
 
-//		public void addProperty4Authorization(String username, String password) {
-//			String encoding = new BASE64Encoder().encode((username + ":" + password).getBytes());
-//			addProperty(RequestProperties.authorization, "Basic " + encoding);
-//		}
+		// public void addProperty4Authorization(String username, String
+		// password) {
+		// String encoding = new BASE64Encoder().encode((username + ":" +
+		// password).getBytes());
+		// addProperty(RequestProperties.authorization, "Basic " + encoding);
+		// }
 
 		//
 		public Encodings responseEncoding = null;// = Encodings.UTF8;
 		public Encodings readAsEncoding = null;// = Encodings.UTF8;
 		//
-		public ICallbacks<HttpURLConnection, Boolean> onConnected = null;
-		public ICallbacks<Percents, Boolean> onProgressChanged = null;
+		public Function<HttpURLConnection, Boolean> onConnected = null;
+		public Function<Percents, Boolean> onProgressChanged = null;
 	}
 
 	// /////////////////////////////////////////////////
@@ -178,7 +180,7 @@ public final class WebClient {
 		try {
 			uc = newConnection4Get(args);
 			uc.connect();
-			if (null == args.onConnected || args.onConnected.callback(uc)) {
+			if (null == args.onConnected || args.onConnected.apply(uc)) {
 				return get(uc, args);
 			}
 			return null;
@@ -233,7 +235,7 @@ public final class WebClient {
 		try {
 			uc = newConnection4Get(args);
 			uc.connect();
-			if (null == args.onConnected || args.onConnected.callback(uc)) {
+			if (null == args.onConnected || args.onConnected.apply(uc)) {
 				return getAndSave(uc, args, targetFilename);
 			}
 			return -1;
@@ -278,14 +280,14 @@ public final class WebClient {
 					fs.write(buffer, 0, byteread);
 					int percentsValue = (int) (bytesum * 100 / totalSize);
 					if (percentsValue != prePercentsValue) {
-						if (!args.onProgressChanged.callback(new Percents(percentsValue))) {
+						if (!args.onProgressChanged.apply(new Percents(percentsValue))) {
 							return -1;
 						}
 						prePercentsValue = percentsValue;
 					}
 				}
 			}
-			args.onProgressChanged.callback(new Percents(100));
+			args.onProgressChanged.apply(new Percents(100));
 			return bytesum;
 		} finally {
 			if (null != inStream) {

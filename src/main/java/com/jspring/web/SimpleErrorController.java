@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.web.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.ErrorAttributes;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.jspring.date.DateFormats;
@@ -35,7 +36,7 @@ public class SimpleErrorController extends AbstractErrorController {
 		log.warn("[HTML:" + request.getRequestURI() + "][" + body.get("status") + "][" + body.get("error") + "]"
 				+ body.get("message"));
 		try {
-			WebUtils.setResponse4IframeAndRest(response);
+			WebConfig.setResponse4IframeAndRest(response);
 			PrintWriter writer = response.getWriter();
 			writer.write("<html><head><meta charset=\"UTF-8\" />");
 			writer.write("<title>ERROR</title>");
@@ -65,17 +66,16 @@ public class SimpleErrorController extends AbstractErrorController {
 	@ResponseBody
 	@RequestMapping(value = "/error")
 	public RestResult error(HttpServletRequest request, HttpServletResponse response) {
-		Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
-		log.warn("[JSON:" + request.getRequestURI() + "][" + body.get("status") + "][" + body.get("error") + "]"
-				+ body.get("message"));
-		WebUtils.setResponse4IframeAndRest(response);
-		RestResult r = new RestResult();
-		r.path = request.getRequestURI();
-		r.status = (Integer) body.get("status");
-		r.error = body.get("error").toString();
-		r.message = body.get("message").toString();
-		r.content = DateFormats.dateTime.format(body.get("timestamp"));
-		return r;
+		return WebConfig.responseBody(() -> {
+			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
+			RestResult r = new RestResult();
+			r.path = request.getRequestURI();
+			r.status = (Integer) body.get("status");
+			r.error = body.get("error").toString();
+			r.message = body.get("message").toString();
+			r.content = DateFormats.dateTime.format(body.get("timestamp"));
+			return r;
+		}, request, response, RequestMethod.GET);
 	}
 
 }

@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.howardqueen</groupId>
 	<artifactId>jspring-web</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<properties>
 		<!-- 文件拷贝时的编码 -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -75,6 +75,11 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>5.1.40</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+			<version>1.4.3.RELEASE</version>
 		</dependency>
 		<!-- WEB -->
 		<dependency>

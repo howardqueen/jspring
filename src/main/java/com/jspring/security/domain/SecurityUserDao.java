@@ -9,10 +9,6 @@ import com.jspring.security.domain.SecurityRole;
 
 public class SecurityUserDao<T extends SecurityUser> extends CrudRepository<T> {
 
-	// public SecurityUserDao(DataManager dataManager, Class<T> clsOfT) {
-	// super(dataManager, clsOfT);
-	// }
-
 	public T findByUserName(String userName) {
 		return this.findOne(new DaoWhere(SecurityUser.Columns.userName, Operators.Equal, userName));
 	}

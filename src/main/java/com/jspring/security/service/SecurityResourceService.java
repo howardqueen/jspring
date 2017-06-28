@@ -56,7 +56,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 				return;
 			}
 			resources = new ArrayList<ResourceHolder>();
-			for (SecurityResource r : securityResourceRepository.findAll(1, 10000)) {
+			for (SecurityResource r : securityResourceRepository.findAll(1, 1000)) {
 				ResourceHolder i = new ResourceHolder();
 				log.debug(">> LOAD ROLES [" + r.url + ":" + r.method + "]: ");
 				i.matcher = new AntPathRequestMatcher(r.url);

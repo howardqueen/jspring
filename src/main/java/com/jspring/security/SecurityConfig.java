@@ -29,12 +29,6 @@ import com.jspring.security.domain.*;
 @ComponentScan(value = { "com.jspring.data", "com.jspring.security.web" })
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-	protected final Logger log;
-
-	public SecurityConfig() {
-		this.log = LoggerFactory.getLogger(this.getClass());
-	}
-
 	//////////////////////////////////////////////////
 	///
 	//////////////////////////////////////////////////
@@ -86,14 +80,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	/// 密码加盐处理
 	//////////////////////////////////////////////////
 	private static final String PASSWORD_SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";// 盐值
-	public static final String PASSWORD_DEFAULT = "e10adc3949ba59abbe56e057f20f883e";
+	public static final String PASSWORD_123456 = "e10adc3949ba59abbe56e057f20f883e";
 
 	protected static final class MyPasswordEncoder implements PasswordEncoder {
 		private static final Logger log = LoggerFactory.getLogger(MyPasswordEncoder.class);
 		private final PasswordEncoder encoder = new StandardPasswordEncoder(PASSWORD_SITE_WIDE_SECRET);
 
 		public String encode(CharSequence pwd) {
-			if (pwd.toString() == PASSWORD_DEFAULT) {// 初始密码123456
+			if (pwd.toString() == PASSWORD_123456) {// 初始密码123456
 				return pwd.toString();
 			}
 			return encoder.encode(pwd);
@@ -104,7 +98,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				if (pwd1.length() == 0 || Strings.isNullOrEmpty(pwd2)) {
 					return false;
 				}
-				if (pwd1.toString().equals(PASSWORD_DEFAULT) && pwd2.equals(PASSWORD_DEFAULT)) {// 123456
+				if (pwd1.toString().equals(PASSWORD_123456) && pwd2.equals(PASSWORD_123456)) {// 123456
 					return true;
 				}
 				return encoder.matches(pwd1, pwd2);

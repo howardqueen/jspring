@@ -1,6 +1,7 @@
 package com.jspring.data;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.function.UnaryOperator;
 
 import javax.persistence.Column;
@@ -20,6 +21,9 @@ public class MetaField {
 			try {
 				T domain = metaEntity.getEntityClass().newInstance();
 				for (Field f : metaEntity.getEntityClass().getFields()) {
+					if (Modifier.isStatic(f.getModifiers())) {
+						continue;
+					}
 					switch (f.getType().getSimpleName()) {
 					case ("String"):
 						f.set(domain, rs.getString(metaEntity.getMetaField(f.getName()).getSqlColumnName()));
@@ -62,6 +66,9 @@ public class MetaField {
 			try {
 				T domain = pojoClass.newInstance();
 				for (Field f : pojoClass.getFields()) {
+					if (Modifier.isStatic(f.getModifiers())) {
+						continue;
+					}
 					switch (f.getType().getSimpleName()) {
 					case ("String"):
 						f.set(domain, rs.getString(f.getName()));
@@ -103,6 +110,9 @@ public class MetaField {
 		try {
 			T domain = metaEntity.getEntityClass().newInstance();
 			for (Field f : metaEntity.getEntityClass().getFields()) {
+				if (Modifier.isStatic(f.getModifiers())) {
+					continue;
+				}
 				String value = map.apply(metaEntity.getMetaField(f.getName()).getSqlColumnName());
 				if (Strings.isNullOrEmpty(value)) {
 					continue;

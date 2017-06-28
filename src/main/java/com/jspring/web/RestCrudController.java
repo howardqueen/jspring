@@ -67,7 +67,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	String[] domains;
 	private Map<String, CrudRepository<?>> repositories = new HashMap<>();
 
-	private CrudRepository<?> getDao(String domain, HttpServletRequest request) {
+	private CrudRepository<?> getRepository(String domain, HttpServletRequest request) {
 		if (repositories.containsKey(domain)) {
 			return (CrudRepository<?>) repositories.get(domain);
 		}
@@ -124,7 +124,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	@RequestMapping(path = "crud/{domain}", method = RequestMethod.POST)
 	public RestResult create(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
-			CrudRepository<?> dao = getDao(domain, request);
+			CrudRepository<?> dao = getRepository(domain, request);
 			return dao.insert(dao.parseEntity((s) -> request.getParameter(s)));
 		}, request, response, RequestMethod.POST);
 	}
@@ -142,7 +142,7 @@ public final class RestCrudController implements ApplicationContextAware {
 				} catch (UnsupportedEncodingException e) {
 				}
 			}
-			return getDao(domain, request).update((s) -> request.getParameter(s), id);
+			return getRepository(domain, request).update((s) -> request.getParameter(s), id);
 		}, request, response, RequestMethod.PUT);
 	}
 
@@ -159,7 +159,7 @@ public final class RestCrudController implements ApplicationContextAware {
 				} catch (UnsupportedEncodingException e) {
 				}
 			}
-			CrudRepository<?> dao = getDao(domain, request);
+			CrudRepository<?> dao = getRepository(domain, request);
 			return dao.delete(hId.value);
 		}, request, response, RequestMethod.DELETE);
 	}
@@ -177,7 +177,7 @@ public final class RestCrudController implements ApplicationContextAware {
 				} catch (UnsupportedEncodingException e) {
 				}
 			}
-			CrudRepository<?> dao = getDao(domain, request);
+			CrudRepository<?> dao = getRepository(domain, request);
 			return dao.findOneById(hId.value);
 		}, request, response, RequestMethod.GET);
 	}
@@ -191,7 +191,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
-			CrudRepository<?> dao = getDao(domain, request);
+			CrudRepository<?> dao = getRepository(domain, request);
 			RestPage p = new RestPage();
 			p.total = dao.countAll(wheres);
 			p.rows = dao.findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
@@ -222,7 +222,7 @@ public final class RestCrudController implements ApplicationContextAware {
 		try {
 			DaoWhere[] wheres = DaoWhere.fromJoinStrings(filters);
 			CrudTableInfo cti = MetaEntity.getMetaEntity(getEntityClass(domain, request)).getCrudTableInfo();
-			List<?> rows = getDao(domain, request).findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
+			List<?> rows = getRepository(domain, request).findAll(page, size, DaoOrder.fromJoinStrings(order), wheres);
 			WebConfig.setResponse4Csv(response, cti.title + "_" + (Strings.isNullOrEmpty(filters) ? "全部" : filters));
 			PrintWriter writer = response.getWriter();
 			boolean isFirst = true;
@@ -278,7 +278,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			@RequestParam(value = "order", defaultValue = "") String order, HttpServletRequest request,
 			HttpServletResponse response) {
 		return WebConfig.responseObject(
-				() -> getDao(domain, request).findOne(DaoOrder.fromJoinStrings(order),
+				() -> getRepository(domain, request).findOne(DaoOrder.fromJoinStrings(order),
 						DaoWhere.fromJoinStrings(filters)), //
 				request, response, RequestMethod.GET);
 	}
@@ -287,7 +287,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	@RequestMapping(path = "cruds/batch/{domain}", method = RequestMethod.DELETE)
 	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
 			HttpServletResponse response) {
-		return WebConfig.responseObject(() -> getDao(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
+		return WebConfig.responseObject(() -> getRepository(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
 				request, response, RequestMethod.GET);
 	}
 

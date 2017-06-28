@@ -4,10 +4,15 @@ import java.util.List;
 
 import com.jspring.data.CrudRepository;
 import com.jspring.data.DaoWhere;
+import com.jspring.data.SqlExecutor;
 import com.jspring.data.DaoWhere.Operators;
 import com.jspring.security.domain.SecurityRole;
 
 public class SecurityUserRepository<T extends SecurityUser> extends CrudRepository<T> {
+
+	public SecurityUserRepository(SqlExecutor sqlExecutor, Class<T> entityClass) {
+		super(sqlExecutor, entityClass);
+	}
 
 	public T findByUserName(String userName) {
 		return this.findOne(new DaoWhere(SecurityUser.Columns.userName, Operators.Equal, userName));

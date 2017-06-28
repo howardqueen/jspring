@@ -206,26 +206,6 @@ public final class RestCrudController implements ApplicationContextAware {
 	/// CRUDS
 	///////////////////
 	@ResponseBody
-	@RequestMapping(path = "cruds/batch/{domain}", method = RequestMethod.DELETE)
-	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
-			HttpServletResponse response) {
-		return WebConfig.responseObject(() -> getDao(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
-				request, response, RequestMethod.GET);
-	}
-
-	@ResponseBody
-	@RequestMapping(path = "cruds/one/{domain}", method = RequestMethod.GET)
-	public RestResult findOne(@PathVariable String domain,
-			@RequestParam(value = "filters", defaultValue = "") String filters,
-			@RequestParam(value = "order", defaultValue = "") String order, HttpServletRequest request,
-			HttpServletResponse response) {
-		return WebConfig.responseObject(
-				() -> getDao(domain, request).findOne(DaoOrder.fromJoinStrings(order),
-						DaoWhere.fromJoinStrings(filters)), //
-				request, response, RequestMethod.GET);
-	}
-
-	@ResponseBody
 	@RequestMapping(path = "cruds/schema/{domain}", method = RequestMethod.GET)
 	public RestResult schema(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseObject(
@@ -289,6 +269,26 @@ public final class RestCrudController implements ApplicationContextAware {
 			log.warn("[EXPORT:" + RequestMethod.GET + ":" + request.getRequestURI() + "][500][" + e.getClass().getName()
 					+ "]" + e.getMessage());
 		}
+	}
+
+	@ResponseBody
+	@RequestMapping(path = "cruds/one/{domain}", method = RequestMethod.GET)
+	public RestResult findOne(@PathVariable String domain,
+			@RequestParam(value = "filters", defaultValue = "") String filters,
+			@RequestParam(value = "order", defaultValue = "") String order, HttpServletRequest request,
+			HttpServletResponse response) {
+		return WebConfig.responseObject(
+				() -> getDao(domain, request).findOne(DaoOrder.fromJoinStrings(order),
+						DaoWhere.fromJoinStrings(filters)), //
+				request, response, RequestMethod.GET);
+	}
+
+	@ResponseBody
+	@RequestMapping(path = "cruds/batch/{domain}", method = RequestMethod.DELETE)
+	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
+			HttpServletResponse response) {
+		return WebConfig.responseObject(() -> getDao(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
+				request, response, RequestMethod.GET);
 	}
 
 }

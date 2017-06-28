@@ -69,6 +69,7 @@ public class MetaEntity<T> {
 			this._sqlTableExpression = entityClass.getSimpleName();
 			this._sqlTableName = entityClass.getSimpleName();
 		} else {
+			this._database = Strings.isNullOrEmpty(table.catalog()) ? "spring" : table.catalog();
 			this._sqlTableExpression = Strings.isNullOrEmpty(table.name()) ? entityClass.getSimpleName() : table.name();
 			this._sqlTableName = _sqlTableExpression.indexOf(' ') > 0 ? entityClass.getSimpleName()
 					: _sqlTableExpression;

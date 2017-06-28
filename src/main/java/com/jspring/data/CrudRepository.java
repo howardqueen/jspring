@@ -21,7 +21,7 @@ public class CrudRepository<T> {
 
 	public CrudRepository(SqlExecutor sqlExecutor, Class<T> entityClass) {
 		this.sqlExecutor = sqlExecutor;
-		log.info(">>> [ENTITY]" + entityClass.getName());
+//		log.info(">>> [ENTITY]" + entityClass.getName());
 		_entityInfo = (MetaEntity<T>) MetaEntity.getMetaEntity(entityClass);
 	}
 

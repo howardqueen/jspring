@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,7 +48,7 @@ public final class SecurityController {
 		}, request, response, RequestMethod.GET);
 	}
 
-	@RequestMapping(path = "/user/reload", method = RequestMethod.PUT)
+	@RequestMapping(path = "/security/reload", method = RequestMethod.PUT)
 	@ResponseBody
 	public RestResult sync(HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
@@ -56,6 +57,13 @@ public final class SecurityController {
 		}, request, response, RequestMethod.PUT);
 	}
 
+	/**
+	 * 获取用户信息
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 */
 	@SuppressWarnings({ "unchecked" })
 	@RequestMapping(path = "/user", method = RequestMethod.GET)
 	@ResponseBody
@@ -69,10 +77,19 @@ public final class SecurityController {
 		}, request, response, RequestMethod.GET);
 	}
 
+	/**
+	 * 更改密码
+	 * 
+	 * @param oldPassword
+	 * @param newPassword
+	 * @param request
+	 * @param response
+	 * @return
+	 */
 	@SuppressWarnings({ "unchecked" })
-	@RequestMapping(path = "/user", method = RequestMethod.POST)
+	@RequestMapping(path = "/user", method = RequestMethod.PUT)
 	@ResponseBody
-	public RestResult password(@RequestParam String oldPassword, @RequestParam String newPassword,
+	public RestResult changePassword(@RequestParam String oldPassword, @RequestParam String newPassword,
 			HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseBody(() -> {
 			SecurityUserDetails<SecurityUser> details = (SecurityUserDetails<SecurityUser>) SecurityContextHolder
@@ -94,10 +111,27 @@ public final class SecurityController {
 			user.password = SecurityConfig.PASSWORD_ENCODER.encode(newPassword);
 			securityUserRepository.update(user);
 			r.status = 200;
-			r.error = details.getUsername() + " password changed";
-			r.message = "You have changed your password successfully!";
+			r.message = "Password changed!";
 			return r;
-		}, request, response, RequestMethod.POST);
+		}, request, response, RequestMethod.PUT);
+	}
+
+	/**
+	 * 重置密码
+	 */
+	@RequestMapping(path = "/user/{userId}", method = RequestMethod.PUT)
+	@ResponseBody
+	public RestResult resetPassword(@PathVariable Integer userId, HttpServletRequest request,
+			HttpServletResponse response) {
+		return WebConfig.responseBody(() -> {
+			RestResult r = new RestResult();
+			SecurityUser user = securityUserRepository.findOneById(userId);
+			user.password = SecurityConfig.PASSWORD_123456;
+			securityUserRepository.update(user);
+			r.status = 200;
+			r.message = "Password reset!";
+			return r;
+		}, request, response, RequestMethod.PUT);
 	}
 
 }

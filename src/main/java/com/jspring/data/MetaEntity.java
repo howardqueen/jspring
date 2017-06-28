@@ -98,6 +98,9 @@ public class MetaEntity<T> {
 				}
 			}
 		}
+		if (null == this._idColumn) {
+			this._idColumn = metaFields[0];
+		}
 	}
 
 	//////////////////

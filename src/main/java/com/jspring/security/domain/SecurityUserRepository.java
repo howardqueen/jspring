@@ -32,12 +32,9 @@ public class SecurityUserRepository<T extends SecurityUser> extends CrudReposito
 	public List<SecurityRole> findRoles(Integer resourceId) {
 		return getSqlExecutor().queryPojos(getMetaEntity().getDatabase(), SecurityRole.class,
 				//
-				"select r.roleId, r.roleName from SECURITY_ROLES r"
-						//
-						+ " left join SECURITY_ROLE_MENUS rm on r.roleId = rm.roleId"
-						//
-						+ " left join SECURITY_MENU_RESOURCES mr on rm.menuId = mr.menuId"
-						//
+				"select r.roleId, r.roleName, r.nickName from SECURITY_ROLES r" //
+						+ " left join SECURITY_ROLE_MENUS rm on r.roleId = rm.roleId" //
+						+ " left join SECURITY_MENU_RESOURCES mr on rm.menuId = mr.menuId" //
 						+ " where mr.resourceId = ?",
 				resourceId);
 	}

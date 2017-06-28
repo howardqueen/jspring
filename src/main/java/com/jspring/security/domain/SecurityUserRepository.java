@@ -7,7 +7,7 @@ import com.jspring.data.DaoWhere;
 import com.jspring.data.DaoWhere.Operators;
 import com.jspring.security.domain.SecurityRole;
 
-public class SecurityUserDao<T extends SecurityUser> extends CrudRepository<T> {
+public class SecurityUserRepository<T extends SecurityUser> extends CrudRepository<T> {
 
 	public T findByUserName(String userName) {
 		return this.findOne(new DaoWhere(SecurityUser.Columns.userName, Operators.Equal, userName));

@@ -47,7 +47,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	protected UserDetailsService getSecurityUserService() {
 		if (null == _securityUserService) {
 			_securityUserService = new SecurityUserService<>(
-					(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"));
+					(SecurityUserRepository<?>) this.getApplicationContext().getBean("securityUserRepository"));
 		}
 		return _securityUserService;
 	}
@@ -127,8 +127,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private SqlExecutor sqlExecutor;
 
 	@Bean
-	public SecurityUserDao<SecurityUser> securityUserRepository() {
-		return new SecurityUserDao<SecurityUser>();
+	public SecurityUserRepository<SecurityUser> securityUserRepository() {
+		return new SecurityUserRepository<SecurityUser>();
 	}
 
 	@Bean
@@ -165,7 +165,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	@Bean
 	public SecurityResourceService securityResourceService() {
 		return new SecurityResourceService(
-				(SecurityUserDao<?>) this.getApplicationContext().getBean("securityUserRepository"),
+				(SecurityUserRepository<?>) this.getApplicationContext().getBean("securityUserRepository"),
 				(CrudRepository<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository"));
 	}
 

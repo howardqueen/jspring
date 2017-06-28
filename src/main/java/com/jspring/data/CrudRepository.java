@@ -58,11 +58,11 @@ public class CrudRepository<T> {
 	//////////////////
 	/// METHODS
 	//////////////////
-	public List<T> findAll(String sql, Object... args) {
+	public List<T> findAllBySql(String sql, Object... args) {
 		return sqlExecutor.queryEntities(getMetaEntity(), sql, args);
 	}
 
-	public T findOne(String sql, Object... args) {
+	public T findOneBySql(String sql, Object... args) {
 		return sqlExecutor.queryEntity(getMetaEntity(), sql, args);
 	}
 
@@ -152,9 +152,9 @@ public class CrudRepository<T> {
 		sb.append(' ');
 		sb.append(size);
 		if (args.size() > 0) {
-			return findAll(sb.toString(), args.toArray(new Object[0]));
+			return findAllBySql(sb.toString(), args.toArray(new Object[0]));
 		}
-		return findAll(sb.toString());
+		return findAllBySql(sb.toString());
 	}
 
 	public List<T> findAll(int page, int size, DaoOrder order, DaoWhere... wheres) {
@@ -238,9 +238,9 @@ public class CrudRepository<T> {
 		}
 		sb.append(" LIMIT 1");
 		if (args.size() > 0) {
-			return findOne(sb.toString(), args.toArray(new Object[0]));
+			return findOneBySql(sb.toString(), args.toArray(new Object[0]));
 		}
-		return findOne(sb.toString());
+		return findOneBySql(sb.toString());
 	}
 
 	public T findOne(DaoOrder order, DaoWhere... wheres) {
@@ -261,7 +261,7 @@ public class CrudRepository<T> {
 		sb.append(' ');
 		sb.append('?');
 		sb.append(" LIMIT 1");
-		return findOne(sb.toString(), idValue);
+		return findOneBySql(sb.toString(), idValue);
 	}
 
 	//////////////////

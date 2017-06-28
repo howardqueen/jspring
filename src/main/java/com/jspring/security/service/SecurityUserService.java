@@ -10,7 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 import com.jspring.security.domain.SecurityUser;
 import com.jspring.security.domain.SecurityRole;
-import com.jspring.security.domain.SecurityUserDao;
+import com.jspring.security.domain.SecurityUserRepository;
 
 public class SecurityUserService<T extends SecurityUser> implements UserDetailsService {
 
@@ -18,14 +18,14 @@ public class SecurityUserService<T extends SecurityUser> implements UserDetailsS
 
 		private static final long serialVersionUID = 1L;
 
-		private final SecurityUserDao<T> securityUserRepository;
+		private final SecurityUserRepository<T> securityUserRepository;
 		private final T user;
 
 		public SecurityUser getUser() {
 			return user;
 		}
 
-		public SecurityUserDetails(T user, SecurityUserDao<T> securityUserRepository) {
+		public SecurityUserDetails(T user, SecurityUserRepository<T> securityUserRepository) {
 			this.user = user;
 			this.securityUserRepository = securityUserRepository;
 		}
@@ -72,9 +72,9 @@ public class SecurityUserService<T extends SecurityUser> implements UserDetailsS
 
 	}
 
-	private final SecurityUserDao<T> securityUserRepository;
+	private final SecurityUserRepository<T> securityUserRepository;
 
-	public SecurityUserService(SecurityUserDao<T> securityUserRepository) {
+	public SecurityUserService(SecurityUserRepository<T> securityUserRepository) {
 		this.securityUserRepository = securityUserRepository;
 	}
 

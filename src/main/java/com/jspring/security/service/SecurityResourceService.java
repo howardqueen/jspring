@@ -16,7 +16,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.jspring.security.domain.SecurityResource;
-import com.jspring.security.domain.SecurityUserDao;
+import com.jspring.security.domain.SecurityUserRepository;
 import com.jspring.security.domain.SecurityRole;
 import com.jspring.Exceptions;
 import com.jspring.data.CrudRepository;
@@ -27,10 +27,10 @@ import com.jspring.data.CrudRepository;
 public class SecurityResourceService implements FilterInvocationSecurityMetadataSource {
 	private static final Logger log = LoggerFactory.getLogger(SecurityResourceService.class);
 
-	private final SecurityUserDao<?> securityUserRepository;
+	private final SecurityUserRepository<?> securityUserRepository;
 	private final CrudRepository<SecurityResource> securityResourceRepository;
 
-	public SecurityResourceService(SecurityUserDao<?> securityUserRepository,
+	public SecurityResourceService(SecurityUserRepository<?> securityUserRepository,
 			CrudRepository<SecurityResource> securityResourceRepository) {
 		this.securityUserRepository = securityUserRepository;
 		this.securityResourceRepository = securityResourceRepository;

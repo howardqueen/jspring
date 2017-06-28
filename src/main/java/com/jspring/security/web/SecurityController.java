@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.jspring.Strings;
 import com.jspring.security.SecurityConfig;
 import com.jspring.security.domain.SecurityUser;
-import com.jspring.security.domain.SecurityUserDao;
+import com.jspring.security.domain.SecurityUserRepository;
 import com.jspring.security.service.SecurityResourceService;
 import com.jspring.security.service.SecurityUserService.SecurityUserDetails;
 import com.jspring.web.RestResult;
@@ -26,7 +26,7 @@ public final class SecurityController {
 	@Autowired
 	SecurityResourceService securityResourceService;
 	@Autowired
-	SecurityUserDao<SecurityUser> securityUserRepository;
+	SecurityUserRepository<SecurityUser> securityUserRepository;
 
 	@RequestMapping(path = "/login", method = RequestMethod.GET, produces = "text/html")
 	public String loginHtml(HttpServletRequest request, HttpServletResponse response) {

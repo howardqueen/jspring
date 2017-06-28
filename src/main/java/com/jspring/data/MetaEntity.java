@@ -223,7 +223,7 @@ public class MetaEntity<T> {
 			List<String> columns = new ArrayList<>();
 			for (Field f : entityClass.getFields()) {
 				MetaField mf = getMetaField(f.getName());
-				if (mf.isReadonly()) {
+				if (!mf.isReadonly()) {
 					columns.add(mf.getSqlColumnName());
 				}
 			}

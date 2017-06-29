@@ -127,7 +127,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private SqlExecutor sqlExecutor;
 
 	@Bean
-	public SecurityUserRepository<SecurityUser> securityUserRepository() {
+	public SecurityUserRepository<? extends SecurityUser> securityUserRepository() {
 		return new SecurityUserRepository<SecurityUser>(sqlExecutor, SecurityUser.class);
 	}
 

@@ -18,7 +18,6 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import com.jspring.security.domain.SecurityResource;
 import com.jspring.security.domain.SecurityUserRepository;
 import com.jspring.security.domain.SecurityRole;
-import com.jspring.Exceptions;
 import com.jspring.data.CrudRepository;
 
 /**
@@ -47,7 +46,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 
 	private Collection<ResourceHolder> resources = null;
 
-	private void loadResources() throws NoSuchFieldException, SecurityException {
+	private void loadResources() {
 		if (null != resources) {
 			return;
 		}
@@ -58,11 +57,11 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 			resources = new ArrayList<ResourceHolder>();
 			for (SecurityResource r : securityResourceRepository.findAll(1, 1000)) {
 				ResourceHolder i = new ResourceHolder();
-				log.debug(">> LOAD ROLES [" + r.url + ":" + r.method + "]: ");
+				log.info(">> LOAD ROLES [" + r.url + ":" + r.method + "]: ");
 				i.matcher = new AntPathRequestMatcher(r.url);
 				i.method = r.method;
 				for (SecurityRole o : securityUserRepository.findRoles(r.resourceId)) {
-					log.debug("  " + o.getAuthority());
+					log.info("  " + o.getAuthority());
 					i.attributes.add(new SecurityConfig(o.getAuthority()));
 				}
 				resources.add(i);
@@ -85,37 +84,29 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 	}
 
 	public Collection<ConfigAttribute> getAttributes(Object object) throws IllegalArgumentException {
-		try {
-			loadResources();
-		} catch (NoSuchFieldException e) {
-			log.warn(Exceptions.getStackTrace(e));
-		} catch (SecurityException e) {
-			log.warn(Exceptions.getStackTrace(e));
-		}
+		loadResources();
 		HttpServletRequest request = ((FilterInvocation) object).getHttpRequest();
 		if (request.getMethod().equalsIgnoreCase("get")) {
 			for (RequestMatcher m : ANONYMOUS_SKIP_URLS) {
 				if (m.matches(request)) {
-					log.trace(">> [" + request.getRequestURI() + ":" + request.getMethod() + "] SKIP FOR ANONYMOUS");
+					log.debug(">> SKIP [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 					return null;
 				}
 			}
 		}
-		log.debug(">> READ ROLES [" + request.getRequestURI() + ":" + request.getMethod() + "]: ");
 		for (ResourceHolder resource : resources) {
 			if (("*".equals(resource.method) || request.getMethod().equalsIgnoreCase(resource.method))
 					&& resource.matcher.matches(request)) {
-				for (ConfigAttribute a : resource.attributes) {
-					log.trace(a.getAttribute());
-				}
+				log.debug(">> FOUND ROLES [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 				return resource.attributes;
 			}
 		}
+		log.info(">> NOT FOUND(ADMIN ONLY) [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 		return ANONYMOUS_ADMIN_AUTHS;// 未查询到的配置，默认超级管理员可访问
 	}
 
 	public Collection<ConfigAttribute> getAllConfigAttributes() {
-		log.debug(">> GET ALL CONFIG ATTRIBUTES");
+		log.info(">> GET ALL CONFIG ATTRIBUTES NULL");
 		return null;
 	}
 

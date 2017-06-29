@@ -19,12 +19,12 @@ public class SecurityDecisionManager implements AccessDecisionManager {
 		for (GrantedAuthority o : authentication.getAuthorities()) {
 			for (ConfigAttribute b : configAttributes) {
 				if (o.getAuthority().equals(b.getAttribute())) {
-					log.info(">> AUTH PASSED: " + o.getAuthority());
+					log.debug(">> AUTH PASSED: " + o.getAuthority());
 					return;
 				}
 			}
 		}
-		log.info(">> AUTH BLOCKED!");
+		log.debug(">> AUTH BLOCKED!");
 		throw new AccessDeniedException("Access denied");
 	}
 

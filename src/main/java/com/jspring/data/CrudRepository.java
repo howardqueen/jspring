@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.jspring.Environment;
@@ -21,11 +19,8 @@ public class CrudRepository<T> {
 
 	public CrudRepository(SqlExecutor sqlExecutor, Class<T> entityClass) {
 		this.sqlExecutor = sqlExecutor;
-//		log.info(">>> [ENTITY]" + entityClass.getName());
 		_entityInfo = (MetaEntity<T>) MetaEntity.getMetaEntity(entityClass);
 	}
-
-	protected static final Logger log = LoggerFactory.getLogger(CrudRepository.class);
 
 	//////////////////
 	/// FIELDS
@@ -47,7 +42,6 @@ public class CrudRepository<T> {
 					Type genType = getClass().getGenericSuperclass();
 					Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
 					Class<T> entityClass = (Class<T>) params[0];
-					log.info(">>> [ENTITY]" + entityClass.getName());
 					_entityInfo = (MetaEntity<T>) MetaEntity.getMetaEntity(entityClass);
 				}
 			}

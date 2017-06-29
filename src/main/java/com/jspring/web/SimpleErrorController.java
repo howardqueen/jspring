@@ -19,7 +19,8 @@ import com.jspring.date.DateFormats;
 
 @Controller
 public class SimpleErrorController extends AbstractErrorController {
-	private static final Logger log = LoggerFactory.getLogger(SimpleErrorController.class);
+	
+	private static final Logger log = LoggerFactory.getLogger(SimpleErrorController.class.getSimpleName());
 
 	public SimpleErrorController(ErrorAttributes errorAttributes) {
 		super(errorAttributes);

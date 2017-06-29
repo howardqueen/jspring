@@ -33,7 +33,7 @@ public final class SqlExecutor {
 	 */
 	private static <T> List<T> queryEntities(JdbcTemplate jdbcTemplate, MetaEntity<T> metaEntity, String sql,
 			Object... args) {
-		log.info(">>> [SQL]queryEntities<" + metaEntity.getEntityClass().getSimpleName() + ">: " + sql);
+		log.debug("[SQL]queryEntities<" + metaEntity.getEntityClass().getSimpleName() + ">: " + sql);
 		return jdbcTemplate.query(sql, args, MetaField.ROW_MAPPER(metaEntity));
 	}
 
@@ -41,7 +41,7 @@ public final class SqlExecutor {
 	 * 获取首个实体
 	 */
 	private static <T> T queryEntity(JdbcTemplate jdbcTemplate, MetaEntity<T> metaEntity, String sql, Object... args) {
-		log.info(">>> [SQL]queryEntity<" + metaEntity.getEntityClass().getSimpleName() + ">: " + sql);
+		log.debug("[SQL]queryEntity<" + metaEntity.getEntityClass().getSimpleName() + ">: " + sql);
 		return jdbcTemplate.queryForObject(sql, args, MetaField.ROW_MAPPER(metaEntity));
 	}
 
@@ -52,7 +52,7 @@ public final class SqlExecutor {
 	 *            不支持 @Table @Column 等
 	 */
 	private static <T> List<T> queryPojos(JdbcTemplate jdbcTemplate, Class<T> pojoClass, String sql, Object... args) {
-		log.info(">>> [SQL]queryPojos<" + pojoClass.getSimpleName() + ">: " + sql);
+		log.debug("[SQL]queryPojos<" + pojoClass.getSimpleName() + ">: " + sql);
 		return jdbcTemplate.query(sql, args, MetaField.ROW_MAPPER(pojoClass));
 	}
 
@@ -63,7 +63,7 @@ public final class SqlExecutor {
 	 *            不支持 @Table @Column 等
 	 */
 	private static <T> T queryPojo(JdbcTemplate jdbcTemplate, Class<T> pojoClass, String sql, Object... args) {
-		log.info(">>> [SQL]queryPojo<" + pojoClass.getSimpleName() + ">: " + sql);
+		log.debug("[SQL]queryPojo<" + pojoClass.getSimpleName() + ">: " + sql);
 		return jdbcTemplate.queryForObject(sql, args, MetaField.ROW_MAPPER(pojoClass));
 	}
 
@@ -76,7 +76,7 @@ public final class SqlExecutor {
 	 */
 	@SuppressWarnings("unchecked")
 	private static <B> List<B> queryObjects(JdbcTemplate jdbcTemplate, Class<B> basicType, String sql, Object... args) {
-		log.info(">>> [SQL]queryObjects<" + basicType.getSimpleName() + ">: " + sql);
+		log.debug("[SQL]queryObjects<" + basicType.getSimpleName() + ">: " + sql);
 		switch (basicType.getSimpleName()) {
 		case ("String"):
 			return jdbcTemplate.query(sql, args, (r, i) -> (B) r.getString(1));
@@ -108,7 +108,7 @@ public final class SqlExecutor {
 	 */
 	@SuppressWarnings("unchecked")
 	private static <B> B queryObject(JdbcTemplate jdbcTemplate, Class<B> basicType, String sql, Object... args) {
-		log.info(">>> [SQL]queryObject<" + basicType.getSimpleName() + ">: " + sql);
+		log.debug("[SQL]queryObject<" + basicType.getSimpleName() + ">: " + sql);
 		switch (basicType.getSimpleName()) {
 		case ("String"):
 			return (B) jdbcTemplate.queryForObject(sql, args, String.class);
@@ -137,7 +137,7 @@ public final class SqlExecutor {
 	 * @param sql
 	 */
 	private static int update(JdbcTemplate jdbcTemplate, String sql, Object... args) {
-		log.info(">>> [SQL]update: " + sql);
+		log.debug("[SQL]update: " + sql);
 		return jdbcTemplate.update(sql, args);
 	}
 

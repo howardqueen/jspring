@@ -5,6 +5,8 @@ import java.util.Date;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import com.jspring.data.CrudColumn;
+
 @Table(name = "SECURITY_USERS", catalog = "security", //
 		schema = "`userId` bigint(20) NOT NULL AUTO_INCREMENT,\n"//
 				+ "`userName` varchar(50)	NOT NULL,\n"//
@@ -21,13 +23,21 @@ public class SecurityUser {
 	}
 
 	@Id
+	@CrudColumn(title = "用户ID", header = "账户信息", filterable = false, readonly = true)
 	public Long userId;
+	@CrudColumn(title = "用户名", header = "账户信息", readonly = true)
 	public String userName;
+	@CrudColumn(title = "密码", header = "账户信息", filterable = false, readonly = true)
 	public String password;
+	@CrudColumn(title = "创建时间", header = "账户信息", filterable = false, readonly = true)
 	public Date createTime;
+	@CrudColumn(title = "最近访问", header = "账户信息", filterable = false, readonly = true)
 	public Date lastVisit;
+	@CrudColumn(title = "昵称", header = "账户信息", filterable = false, readonly = true)
 	public String nickName;
+	@CrudColumn(title = "实名", header = "账户信息", readonly = true)
 	public String realName;
+	@CrudColumn(title = "锁定状态", header = "账户信息", filterable = false, readonly = true)
 	public Boolean isLocked;
 
 }

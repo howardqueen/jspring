@@ -126,7 +126,7 @@ public final class RestCrudController implements ApplicationContextAware {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?> dao = getRepository(domain, request);
 			return dao.insert(dao.parseEntity((s) -> request.getParameter(s)));
-		}, request, response, RequestMethod.POST);
+		}, request, response);
 	}
 
 	@ResponseBody
@@ -143,7 +143,7 @@ public final class RestCrudController implements ApplicationContextAware {
 				}
 			}
 			return getRepository(domain, request).update((s) -> request.getParameter(s), id);
-		}, request, response, RequestMethod.PUT);
+		}, request, response);
 	}
 
 	@ResponseBody
@@ -161,7 +161,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			}
 			CrudRepository<?> dao = getRepository(domain, request);
 			return dao.delete(hId.value);
-		}, request, response, RequestMethod.DELETE);
+		}, request, response);
 	}
 
 	@ResponseBody
@@ -179,7 +179,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			}
 			CrudRepository<?> dao = getRepository(domain, request);
 			return dao.findOneById(hId.value);
-		}, request, response, RequestMethod.GET);
+		}, request, response);
 	}
 
 	@ResponseBody
@@ -199,7 +199,7 @@ public final class RestCrudController implements ApplicationContextAware {
 			p.size = size;
 			p.page = page;
 			return p;
-		}, request, response, RequestMethod.GET);
+		}, request, response);
 	}
 
 	///////////////////
@@ -210,7 +210,7 @@ public final class RestCrudController implements ApplicationContextAware {
 	public RestResult schema(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseObject(
 				() -> MetaEntity.getMetaEntity(getEntityClass(domain, request)).getCrudTableInfo(), //
-				request, response, RequestMethod.GET);
+				request, response);
 	}
 
 	@RequestMapping(path = "cruds/export/{domain}", method = RequestMethod.GET)
@@ -280,15 +280,16 @@ public final class RestCrudController implements ApplicationContextAware {
 		return WebConfig.responseObject(
 				() -> getRepository(domain, request).findOne(DaoOrder.fromJoinStrings(order),
 						DaoWhere.fromJoinStrings(filters)), //
-				request, response, RequestMethod.GET);
+				request, response);
 	}
 
 	@ResponseBody
 	@RequestMapping(path = "cruds/batch/{domain}", method = RequestMethod.DELETE)
 	public RestResult deleteAll(@PathVariable String domain, @RequestParam String filters, HttpServletRequest request,
 			HttpServletResponse response) {
-		return WebConfig.responseObject(() -> getRepository(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
-				request, response, RequestMethod.GET);
+		return WebConfig.responseObject(
+				() -> getRepository(domain, request).deleteAll(DaoWhere.fromJoinStrings(filters)), //
+				request, response);
 	}
 
 }

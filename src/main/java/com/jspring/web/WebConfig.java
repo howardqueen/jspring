@@ -99,39 +99,39 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 	}
 
 	public static String redirect(Supplier<String> templatePathSupplier, HttpServletRequest request,
-			HttpServletResponse response, RequestMethod method) {
+			HttpServletResponse response) {
 		String templatePath = templatePathSupplier.get();
 		setResponse4IframeAndRest(response);
-		log.info("[HTML:" + method + ":" + request.getRequestURI() + "][200][SUCC]");
+		log.info("[HTML:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
 		return templatePath;
 	}
 
 	public static <R> R responseBody(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
-			HttpServletRequest request, HttpServletResponse response, RequestMethod method) {
+			HttpServletRequest request, HttpServletResponse response) {
 		try {
 			R r = contentSupplier.get();
 			setResponse4IframeAndRest(response);
-			log.info("[JSON:" + method + ":" + request.getRequestURI() + "][200][SUCC]");
+			log.info("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
 			return r;
 		} catch (RuntimeException e) {
 			String error = Exceptions.getStackTrace(e);
 			R r = errorFunction.apply(e.getClass().getSimpleName(), error);
 			setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + method + ":" + request.getRequestURI() + "][500][" + e.getClass().getSimpleName() + "]"
-					+ Environment.NewLine + error);
+			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500]["
+					+ e.getClass().getSimpleName() + "]" + Environment.NewLine + error);
 			return r;
 		} catch (Exception e) {
 			String error = e.getMessage();
 			R r = errorFunction.apply(e.getClass().getName(), error);
 			setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + method + ":" + request.getRequestURI() + "][500][" + e.getClass().getName() + "]"
-					+ error);
+			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500][" + e.getClass().getName()
+					+ "]" + error);
 			return r;
 		}
 	}
 
 	public static RestResult responseBody(Supplier<RestResult> contentSupplier, HttpServletRequest request,
-			HttpServletResponse response, RequestMethod method) {
+			HttpServletResponse response) {
 		return responseBody(() -> {
 			RestResult r = contentSupplier.get();
 			r.path = request.getRequestURI();
@@ -143,15 +143,15 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.error = name;
 			r.message = message;
 			return r;
-		}, request, response, method);
+		}, request, response);
 	}
 
 	public static RestResult responseObject(Supplier<Object> contentSupplier, HttpServletRequest request,
-			HttpServletResponse response, RequestMethod method) {
+			HttpServletResponse response) {
 		return responseBody(() -> {
 			RestResult r = new RestResult();
 			r.status = 200;
-			r.message = method + " SUCCESS";
+			r.message = request.getMethod() + " SUCCESS";
 			r.content = contentSupplier.get();
 			return r;
 		}, (name, message) -> {
@@ -161,7 +161,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.error = name;
 			r.message = message;
 			return r;
-		}, request, response, method);
+		}, request, response);
 	}
 
 }

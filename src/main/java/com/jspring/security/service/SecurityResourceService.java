@@ -25,7 +25,27 @@ import com.jspring.data.CrudRepository;
  * 针对各资源获取对应的权限配置
  */
 public class SecurityResourceService implements FilterInvocationSecurityMetadataSource {
+
 	private static final Logger log = LoggerFactory.getLogger(SecurityResourceService.class);
+
+	static class ResourceHolder {
+		public RequestMatcher matcher;
+		/**
+		 * GET,POST,PUT,DELETE
+		 */
+		public String method;
+		public Collection<ConfigAttribute> attributes;
+	}
+
+	private static final Collection<RequestMatcher> ANONYMOUS_SKIP_URLS = new ArrayList<RequestMatcher>();
+	private static final Collection<ConfigAttribute> ANONYMOUS_ADMIN_AUTHS = new ArrayList<ConfigAttribute>();
+	static {
+		ANONYMOUS_SKIP_URLS.add(new AntPathRequestMatcher("/login*"));
+		for (String u : com.jspring.security.SecurityConfig.SKIP_URLS) {
+			ANONYMOUS_SKIP_URLS.add(new AntPathRequestMatcher(u));
+		}
+		ANONYMOUS_ADMIN_AUTHS.add(new SecurityConfig(SecurityRole.ADMIN.roleName));
+	}
 
 	private final SecurityUserRepository<?> securityUserRepository;
 	private final CrudRepository<SecurityResource> securityResourceRepository;
@@ -34,16 +54,6 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 			CrudRepository<SecurityResource> securityResourceRepository) {
 		this.securityUserRepository = securityUserRepository;
 		this.securityResourceRepository = securityResourceRepository;
-	}
-
-	static class ResourceHolder {
-		public RequestMatcher matcher;
-		/**
-		 * GET,POST,PUT,DELETE
-		 */
-		public String method;
-		public Collection<ConfigAttribute> attributes;// = new
-														// ArrayList<ConfigAttribute>();
 	}
 
 	private Collection<ResourceHolder> resources = null;
@@ -67,6 +77,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 					i.attributes = ANONYMOUS_ADMIN_AUTHS;
 				} else {
 					i.attributes = new ArrayList<ConfigAttribute>();
+					i.attributes.add(new SecurityConfig(SecurityRole.ADMIN.roleName));
 					for (SecurityRole o : roles) {
 						log.debug("  " + o.getAuthority());
 						i.attributes.add(new SecurityConfig(o.getAuthority()));
@@ -81,23 +92,13 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 		resources = null;
 	}
 
-	private static final Collection<RequestMatcher> ANONYMOUS_SKIP_URLS = new ArrayList<RequestMatcher>();
-	private static final Collection<ConfigAttribute> ANONYMOUS_ADMIN_AUTHS = new ArrayList<ConfigAttribute>();
-	static {
-		ANONYMOUS_SKIP_URLS.add(new AntPathRequestMatcher("/login*"));
-		for (String u : com.jspring.security.SecurityConfig.SKIP_URLS) {
-			ANONYMOUS_SKIP_URLS.add(new AntPathRequestMatcher(u));
-		}
-		ANONYMOUS_ADMIN_AUTHS.add(new SecurityConfig(SecurityRole.ADMIN.roleName));
-	}
-
 	public Collection<ConfigAttribute> getAttributes(Object object) throws IllegalArgumentException {
 		loadResources();
 		HttpServletRequest request = ((FilterInvocation) object).getHttpRequest();
 		if (request.getMethod().equalsIgnoreCase("get")) {
 			for (RequestMatcher m : ANONYMOUS_SKIP_URLS) {
 				if (m.matches(request)) {
-					log.info(">> SKIP [" + request.getMethod() + ":" + request.getRequestURI() + "]");
+					log.debug(">> SKIP [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 					return null;
 				}
 			}
@@ -105,11 +106,11 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 		for (ResourceHolder resource : resources) {
 			if (("*".equals(resource.method) || request.getMethod().equalsIgnoreCase(resource.method))
 					&& resource.matcher.matches(request)) {
-				log.info(">> FOUND ROLES [" + request.getMethod() + ":" + request.getRequestURI() + "]");
+				log.debug(">> AUTH [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 				return resource.attributes;
 			}
 		}
-		log.info(">> NOT FOUND(ADMIN ONLY) [" + request.getMethod() + ":" + request.getRequestURI() + "]");
+		log.info(">> ADMIN ONLY [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 		return ANONYMOUS_ADMIN_AUTHS;// 未查询到的配置，默认超级管理员可访问
 	}
 

@@ -2,6 +2,8 @@ package com.jspring.security.service;
 
 import java.util.Collection;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDecisionManager;
@@ -10,6 +12,7 @@ import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.web.FilterInvocation;
 
 public class SecurityDecisionManager implements AccessDecisionManager {
 	private static final Logger log = LoggerFactory.getLogger(SecurityDecisionManager.class);
@@ -24,7 +27,8 @@ public class SecurityDecisionManager implements AccessDecisionManager {
 				}
 			}
 		}
-		log.debug(">> AUTH BLOCKED!");
+		HttpServletRequest request = ((FilterInvocation) object).getHttpRequest();
+		log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][403][Access denied]");
 		throw new AccessDeniedException("Access denied");
 	}
 

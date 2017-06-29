@@ -33,7 +33,7 @@ public final class SecurityController {
 	public String loginHtml(HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.redirect(() -> {
 			return "login";
-		}, request, response, RequestMethod.GET);
+		}, request, response);
 	}
 
 	@RequestMapping(path = "/login", method = RequestMethod.GET)
@@ -45,7 +45,7 @@ public final class SecurityController {
 			r.error = "Access denied";
 			r.message = "You need login";
 			return r;
-		}, request, response, RequestMethod.GET);
+		}, request, response);
 	}
 
 	@RequestMapping(path = "/security/reload", method = RequestMethod.PUT)
@@ -54,7 +54,7 @@ public final class SecurityController {
 		return WebConfig.responseObject(() -> {
 			securityResourceService.resetResources();
 			return 0;
-		}, request, response, RequestMethod.PUT);
+		}, request, response);
 	}
 
 	/**
@@ -74,7 +74,7 @@ public final class SecurityController {
 			SecurityUser user = details.getUser();
 			user.password = null;
 			return user;
-		}, request, response, RequestMethod.GET);
+		}, request, response);
 	}
 
 	/**
@@ -113,7 +113,7 @@ public final class SecurityController {
 			r.status = 200;
 			r.message = "Password changed!";
 			return r;
-		}, request, response, RequestMethod.PUT);
+		}, request, response);
 	}
 
 	/**
@@ -131,7 +131,7 @@ public final class SecurityController {
 			r.status = 200;
 			r.message = "Password reset!";
 			return r;
-		}, request, response, RequestMethod.PUT);
+		}, request, response);
 	}
 
 }

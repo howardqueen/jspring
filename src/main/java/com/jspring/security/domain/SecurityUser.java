@@ -33,11 +33,11 @@ public class SecurityUser {
 	public Date createTime;
 	@CrudColumn(title = "最近访问", header = "账户信息", filterable = false, readonly = true)
 	public Date lastVisit;
-	@CrudColumn(title = "昵称", header = "账户信息", filterable = false, readonly = true)
+	@CrudColumn(title = "昵称", header = "账户信息", filterable = false)
 	public String nickName;
-	@CrudColumn(title = "实名", header = "账户信息", readonly = true)
+	@CrudColumn(title = "实名", header = "账户信息")
 	public String realName;
-	@CrudColumn(title = "锁定状态", header = "账户信息", filterable = false, readonly = true)
+	@CrudColumn(title = "锁定状态", header = "账户信息")
 	public Boolean isLocked;
 
 }

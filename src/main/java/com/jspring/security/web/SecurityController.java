@@ -27,7 +27,7 @@ public final class SecurityController {
 	@Autowired
 	SecurityResourceService securityResourceService;
 	@Autowired
-	SecurityUserRepository<SecurityUser> securityUserRepository;
+	SecurityUserRepository<? extends SecurityUser> securityUserRepository;
 
 	@RequestMapping(path = "/login", method = RequestMethod.GET, produces = "text/html")
 	public String loginHtml(HttpServletRequest request, HttpServletResponse response) {

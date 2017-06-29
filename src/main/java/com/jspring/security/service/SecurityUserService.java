@@ -12,20 +12,21 @@ import com.jspring.security.domain.SecurityUser;
 import com.jspring.security.domain.SecurityRole;
 import com.jspring.security.domain.SecurityUserRepository;
 
-public class SecurityUserService<T extends SecurityUser> implements UserDetailsService {
+public class SecurityUserService implements UserDetailsService {
 
-	public static final class SecurityUserDetails<T extends SecurityUser> implements UserDetails {
+	public static final class SecurityUserDetails implements UserDetails {
 
 		private static final long serialVersionUID = 1L;
 
-		private final SecurityUserRepository<T> securityUserRepository;
-		private final T user;
+		private final SecurityUserRepository<? extends SecurityUser> securityUserRepository;
+		private final SecurityUser user;
 
 		public SecurityUser getUser() {
 			return user;
 		}
 
-		public SecurityUserDetails(T user, SecurityUserRepository<T> securityUserRepository) {
+		public SecurityUserDetails(SecurityUser user,
+				SecurityUserRepository<? extends SecurityUser> securityUserRepository) {
 			this.user = user;
 			this.securityUserRepository = securityUserRepository;
 		}
@@ -72,20 +73,20 @@ public class SecurityUserService<T extends SecurityUser> implements UserDetailsS
 
 	}
 
-	private final SecurityUserRepository<T> securityUserRepository;
+	private final SecurityUserRepository<? extends SecurityUser> securityUserRepository;
 
-	public SecurityUserService(SecurityUserRepository<T> securityUserRepository) {
+	public SecurityUserService(SecurityUserRepository<? extends SecurityUser> securityUserRepository) {
 		this.securityUserRepository = securityUserRepository;
 	}
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		try {
-			T user = securityUserRepository.findByUserName(username);
+			SecurityUser user = securityUserRepository.findByUserName(username);
 			if (null == user) {
 				throw new UsernameNotFoundException("Username not exists");
 			}
-			return new SecurityUserDetails<T>(user, securityUserRepository);
+			return new SecurityUserDetails(user, securityUserRepository);
 		} catch (Exception e) {
 			throw new UsernameNotFoundException(e.getClass().getName() + ":" + e.getMessage());
 		}

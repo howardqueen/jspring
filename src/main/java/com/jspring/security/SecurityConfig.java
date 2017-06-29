@@ -46,7 +46,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	protected UserDetailsService getSecurityUserService() {
 		if (null == _securityUserService) {
-			_securityUserService = new SecurityUserService<>(
+			_securityUserService = new SecurityUserService(
 					(SecurityUserRepository<?>) this.getApplicationContext().getBean("securityUserRepository"));
 		}
 		return _securityUserService;

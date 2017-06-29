@@ -64,13 +64,12 @@ public final class SecurityController {
 	 * @param response
 	 * @return
 	 */
-	@SuppressWarnings({ "unchecked" })
 	@RequestMapping(path = "/user", method = RequestMethod.GET)
 	@ResponseBody
 	public RestResult user(HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
-			SecurityUserDetails<SecurityUser> details = (SecurityUserDetails<SecurityUser>) SecurityContextHolder
-					.getContext().getAuthentication().getPrincipal();
+			SecurityUserDetails details = (SecurityUserDetails) SecurityContextHolder.getContext().getAuthentication()
+					.getPrincipal();
 			SecurityUser user = details.getUser();
 			user.password = null;
 			return user;
@@ -86,14 +85,13 @@ public final class SecurityController {
 	 * @param response
 	 * @return
 	 */
-	@SuppressWarnings({ "unchecked" })
 	@RequestMapping(path = "/user", method = RequestMethod.PUT)
 	@ResponseBody
 	public RestResult changePassword(@RequestParam String oldPassword, @RequestParam String newPassword,
 			HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseBody(() -> {
-			SecurityUserDetails<SecurityUser> details = (SecurityUserDetails<SecurityUser>) SecurityContextHolder
-					.getContext().getAuthentication().getPrincipal();
+			SecurityUserDetails details = (SecurityUserDetails) SecurityContextHolder.getContext().getAuthentication()
+					.getPrincipal();
 			RestResult r = new RestResult();
 			if (!SecurityConfig.PASSWORD_ENCODER.matches(oldPassword, details.getPassword())) {
 				r.status = 403;

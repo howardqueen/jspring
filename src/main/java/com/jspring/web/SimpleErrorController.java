@@ -66,8 +66,8 @@ public class SimpleErrorController extends AbstractErrorController {
 
 	@ResponseBody
 	@RequestMapping(value = "/error")
-	public RestResult error(HttpServletRequest request, HttpServletResponse response) {
-		return WebConfig.responseBody(() -> {
+	public Object error(HttpServletRequest request, HttpServletResponse response) {
+		return WebConfig.responseObjectWithoutLog(() -> {
 			response.setContentType(ContentTypes.js.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
 			log.info("[JSON:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
@@ -81,7 +81,7 @@ public class SimpleErrorController extends AbstractErrorController {
 				r.message = r.message.substring(0, 200) + "...";
 			}
 			return r;
-		}, request, response);
+		}, response);
 	}
 
 }

@@ -105,6 +105,25 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		return templatePath;
 	}
 
+	public static <R> R responseBodyWithoutLog(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
+			HttpServletResponse response) {
+		try {
+			R r = contentSupplier.get();
+			setResponse4IframeAndRest(response);
+			return r;
+		} catch (RuntimeException e) {
+			String error = Exceptions.getStackTrace(e);
+			R r = errorFunction.apply(e.getClass().getSimpleName(), error);
+			setResponse4IframeAndRest(response);
+			return r;
+		} catch (Exception e) {
+			String error = e.getMessage();
+			R r = errorFunction.apply(e.getClass().getName(), error);
+			setResponse4IframeAndRest(response);
+			return r;
+		}
+	}
+
 	public static <R> R responseBody(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
 			HttpServletRequest request, HttpServletResponse response) {
 		try {
@@ -161,6 +180,14 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.message = message;
 			return r;
 		}, request, response);
+	}
+
+	public static Object responseObjectWithoutLog(Supplier<Object> contentSupplier, HttpServletResponse response) {
+		return responseBodyWithoutLog(() -> {
+			return contentSupplier.get();
+		}, (name, message) -> {
+			return name + "," + message;
+		}, response);
 	}
 
 }

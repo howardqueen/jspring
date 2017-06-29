@@ -12,7 +12,6 @@ import org.springframework.boot.autoconfigure.web.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.ErrorAttributes;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.jspring.Exceptions;
@@ -36,35 +35,28 @@ public class SimpleErrorController extends AbstractErrorController {
 		try {
 			response.setContentType(ContentTypes.html.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
-			log.warn("[HTML:" + request.getRequestURI() + "][" + body.get("status") + "][" + body.get("error") + "]"
-					+ body.get("message"));
+			log.info("[HTML:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
+					+ body.get("error") + "]" + body.get("message"));
 			WebConfig.setResponse4IframeAndRest(response);
 			PrintWriter writer = response.getWriter();
 			writer.write("<html>\r\n<head>\r\n<meta charset=\"UTF-8\" />\r\n");
 			writer.write("<title>ERROR</title>\r\n");
 			writer.write("</head>\r\n<body>\r\n");
-			for (String key : body.keySet()) {
-				writer.write("<p><b>");
-				writer.write(key);
-				writer.write(":</b>");
-				writer.write(String.valueOf(body.get(key)));
-				writer.write("</p>\r\n");
-			}
-			// writer.write("<h2 style=\"color:red\">");
-			// writer.write(body.get("status").toString());
-			// writer.write(":");
-			// writer.write(body.get("error").toString());
-			// writer.write("</h2>\r\n");
-			// writer.write("<p>");
-			// writer.write(body.get("message").toString());
-			// writer.write("</p>\r\n");
-			// writer.write("<p>");
-			// writer.write("REQUEST_URI:");
-			// writer.write(request.getRequestURI());
-			// writer.write("</p>\r\n");
-			// writer.write("<p>");
-			// writer.write("TIMESTAMP:");
-			// writer.write(DateFormats.dateTime.format(body.get("timestamp")));
+			writer.write("<h2 style=\"color:red\">");
+			writer.write(body.get("status").toString());
+			writer.write(":");
+			writer.write(body.get("error").toString());
+			writer.write("</h2>\r\n");
+			writer.write("<p>");
+			writer.write(body.get("message").toString());
+			writer.write("</p>\r\n");
+			writer.write("<p>");
+			writer.write("REQUEST_URI:");
+			writer.write(String.valueOf(body.get("path")));
+			writer.write("</p>\r\n");
+			writer.write("<p>");
+			writer.write("TIMESTAMP:");
+			writer.write(DateFormats.dateTime.format(body.get("timestamp")));
 			writer.write("</body>\r\n<html>");
 			writer.flush();
 		} catch (Exception e) {
@@ -78,6 +70,8 @@ public class SimpleErrorController extends AbstractErrorController {
 		return WebConfig.responseBody(() -> {
 			response.setContentType(ContentTypes.js.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
+			log.info("[JSON:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
+					+ body.get("error") + "]" + body.get("message"));
 			RestResult r = new RestResult();
 			r.path = String.valueOf(body.get("path"));
 			r.status = (Integer) body.get("status");

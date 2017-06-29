@@ -2,6 +2,7 @@ package com.jspring.security.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -41,7 +42,8 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 		 * GET,POST,PUT,DELETE
 		 */
 		public String method;
-		public Collection<ConfigAttribute> attributes = new ArrayList<ConfigAttribute>();
+		public Collection<ConfigAttribute> attributes;// = new
+														// ArrayList<ConfigAttribute>();
 	}
 
 	private Collection<ResourceHolder> resources = null;
@@ -60,9 +62,15 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 				log.info(">> LOAD ROLES [" + r.url + ":" + r.method + "]: ");
 				i.matcher = new AntPathRequestMatcher(r.url);
 				i.method = r.method;
-				for (SecurityRole o : securityUserRepository.findRoles(r.resourceId)) {
-					log.info("  " + o.getAuthority());
-					i.attributes.add(new SecurityConfig(o.getAuthority()));
+				List<SecurityRole> roles = securityUserRepository.findRoles(r.resourceId);
+				if (roles.isEmpty()) {
+					i.attributes = ANONYMOUS_ADMIN_AUTHS;
+				} else {
+					i.attributes = new ArrayList<ConfigAttribute>();
+					for (SecurityRole o : roles) {
+						log.debug("  " + o.getAuthority());
+						i.attributes.add(new SecurityConfig(o.getAuthority()));
+					}
 				}
 				resources.add(i);
 			}
@@ -89,7 +97,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 		if (request.getMethod().equalsIgnoreCase("get")) {
 			for (RequestMatcher m : ANONYMOUS_SKIP_URLS) {
 				if (m.matches(request)) {
-					log.debug(">> SKIP [" + request.getMethod() + ":" + request.getRequestURI() + "]");
+					log.info(">> SKIP [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 					return null;
 				}
 			}
@@ -97,7 +105,7 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 		for (ResourceHolder resource : resources) {
 			if (("*".equals(resource.method) || request.getMethod().equalsIgnoreCase(resource.method))
 					&& resource.matcher.matches(request)) {
-				log.debug(">> FOUND ROLES [" + request.getMethod() + ":" + request.getRequestURI() + "]");
+				log.info(">> FOUND ROLES [" + request.getMethod() + ":" + request.getRequestURI() + "]");
 				return resource.attributes;
 			}
 		}

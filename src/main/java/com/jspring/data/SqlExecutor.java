@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,11 @@ public final class SqlExecutor {
 	 */
 	private static <T> T queryEntity(JdbcTemplate jdbcTemplate, MetaEntity<T> metaEntity, String sql, Object... args) {
 		log.debug("[SQL]queryEntity<" + metaEntity.getEntityClass().getSimpleName() + ">: " + sql);
-		return jdbcTemplate.queryForObject(sql, args, MetaField.ROW_MAPPER(metaEntity));
+		try {
+			return jdbcTemplate.queryForObject(sql, args, MetaField.ROW_MAPPER(metaEntity));
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 
 	/**
@@ -64,7 +69,11 @@ public final class SqlExecutor {
 	 */
 	private static <T> T queryPojo(JdbcTemplate jdbcTemplate, Class<T> pojoClass, String sql, Object... args) {
 		log.debug("[SQL]queryPojo<" + pojoClass.getSimpleName() + ">: " + sql);
-		return jdbcTemplate.queryForObject(sql, args, MetaField.ROW_MAPPER(pojoClass));
+		try {
+			return jdbcTemplate.queryForObject(sql, args, MetaField.ROW_MAPPER(pojoClass));
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 
 	/**
@@ -109,25 +118,29 @@ public final class SqlExecutor {
 	@SuppressWarnings("unchecked")
 	private static <B> B queryObject(JdbcTemplate jdbcTemplate, Class<B> basicType, String sql, Object... args) {
 		log.debug("[SQL]queryObject<" + basicType.getSimpleName() + ">: " + sql);
-		switch (basicType.getSimpleName()) {
-		case ("String"):
-			return (B) jdbcTemplate.queryForObject(sql, args, String.class);
-		case ("Integer"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Integer.class);
-		case ("Long"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Long.class);
-		case ("Date"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Date.class);
-		case ("Short"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Short.class);
-		case ("Double"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Double.class);
-		case ("Float"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Float.class);
-		case ("Boolean"):
-			return (B) jdbcTemplate.queryForObject(sql, args, Boolean.class);
-		default:
-			throw Exceptions.newInstance("executeObject(): Illegale BasicType " + basicType.getSimpleName());
+		try {
+			switch (basicType.getSimpleName()) {
+			case ("String"):
+				return (B) jdbcTemplate.queryForObject(sql, args, String.class);
+			case ("Integer"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Integer.class);
+			case ("Long"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Long.class);
+			case ("Date"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Date.class);
+			case ("Short"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Short.class);
+			case ("Double"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Double.class);
+			case ("Float"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Float.class);
+			case ("Boolean"):
+				return (B) jdbcTemplate.queryForObject(sql, args, Boolean.class);
+			default:
+				throw Exceptions.newInstance("executeObject(): Illegale BasicType " + basicType.getSimpleName());
+			}
+		} catch (EmptyResultDataAccessException e) {
+			return null;
 		}
 	}
 

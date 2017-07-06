@@ -1,6 +1,6 @@
 package com.jspring.persistence.sql.mysql;
 
-import com.jspring.data.MetaEntity;
+import com.jspring.data.JEntity;
 import com.jspring.persistence.sql.ICondition;
 import com.jspring.persistence.sql.ISqlQueryBuilder;
 import com.jspring.persistence.sql.IWhere;
@@ -11,9 +11,9 @@ class MysqlQuery<E extends Enum<?>> implements IWhereable<E>, ISqlQueryBuilder {
 	//////////////////
 	/// FIELDS
 	//////////////////
-	private final MetaEntity<?> entityInfo;
+	private final JEntity<?> entityInfo;
 
-	public MysqlQuery(MetaEntity<?> entityInfo) {
+	public MysqlQuery(JEntity<?> entityInfo) {
 		this.entityInfo = entityInfo;
 	}
 
@@ -84,7 +84,7 @@ class MysqlQuery<E extends Enum<?>> implements IWhereable<E>, ISqlQueryBuilder {
 	@Override
 	public String getSqlSelectEntities() {
 		StringBuilder sql = new StringBuilder("SELECT ");
-		String[] cs = entityInfo.getSqlColumnExpressions();
+		String[] cs = entityInfo.getRetrieveableColumns();
 		sql.append(cs[0]);
 		for (int i = 1; i < cs.length; i++) {
 			sql.append(',');
@@ -110,7 +110,7 @@ class MysqlQuery<E extends Enum<?>> implements IWhereable<E>, ISqlQueryBuilder {
 	@Override
 	public String getSqlSelectEntity() {
 		StringBuilder sql = new StringBuilder("SELECT ");
-		String[] cs = entityInfo.getSqlColumnExpressions();
+		String[] cs = entityInfo.getRetrieveableColumns();
 		sql.append(cs[0]);
 		for (int i = 1; i < cs.length; i++) {
 			sql.append(',');

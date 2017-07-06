@@ -1,8 +1,10 @@
 package com.jspring.web;
 
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,8 +27,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.mvc.method.annotation.AbstractJsonpResponseBodyAdvice;
 
 import com.jspring.Encodings;
-import com.jspring.Environment;
 import com.jspring.Exceptions;
+import com.jspring.Strings;
 import com.jspring.web.SimpleErrorController;
 
 @Configuration
@@ -105,20 +107,35 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		return templatePath;
 	}
 
+	public static void responseCsv(Function<PrintWriter, String> contentWriter, HttpServletRequest request,
+			HttpServletResponse response) {
+		try (PrintWriter writer = response.getWriter()) {
+			String title = contentWriter.apply(writer);
+			setResponse4Csv(response, title);
+			log.info("[CSV:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
+		} catch (Exception er) {
+			Exceptions e = Exceptions.newInstance(er);
+			response.reset();
+			setResponse4Rest(response);
+			try (PrintWriter writer = response.getWriter()) {
+				writer.write(er.getClass().getName());
+				writer.write("\r\n");
+				writer.write(e.getMessage());
+			} catch (Exception e1) {
+			}
+			log.warn("[CSV:" + request.getMethod() + ":" + request.getRequestURI() + "][500][" + er.getClass().getName()
+					+ "]" + e.getMessage());
+		}
+	}
+
 	public static <R> R responseBodyWithoutLog(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
 			HttpServletResponse response) {
 		try {
 			R r = contentSupplier.get();
 			setResponse4IframeAndRest(response);
 			return r;
-		} catch (RuntimeException e) {
-			String error = Exceptions.getStackTrace(e);
-			R r = errorFunction.apply(e.getClass().getSimpleName(), error);
-			setResponse4IframeAndRest(response);
-			return r;
 		} catch (Exception e) {
-			String error = e.getMessage();
-			R r = errorFunction.apply(e.getClass().getName(), error);
+			R r = errorFunction.apply(e.getClass().getName(), Exceptions.newInstance(e).getMessage());
 			setResponse4IframeAndRest(response);
 			return r;
 		}
@@ -131,19 +148,12 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			setResponse4IframeAndRest(response);
 			log.info("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
 			return r;
-		} catch (RuntimeException e) {
-			String error = Exceptions.getStackTrace(e);
-			R r = errorFunction.apply(e.getClass().getSimpleName(), error);
+		} catch (Exception er) {
+			Exceptions e = Exceptions.newInstance(er);
+			R r = errorFunction.apply(er.getClass().getName(), e.getMessage());
 			setResponse4IframeAndRest(response);
 			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500]["
-					+ e.getClass().getSimpleName() + "]" + Environment.NewLine + error);
-			return r;
-		} catch (Exception e) {
-			String error = e.getMessage();
-			R r = errorFunction.apply(e.getClass().getName(), error);
-			setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500][" + e.getClass().getName()
-					+ "]" + error);
+					+ er.getClass().getName() + "]" + e.getMessage());
 			return r;
 		}
 	}
@@ -159,7 +169,8 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.status = 500;
 			r.path = request.getRequestURI();
 			r.error = name;
-			r.message = message;
+			r.message = Strings.isNullOrEmpty(message) ? null
+					: (message.length() > 100 ? message.substring(0, 100) + "..." : message);
 			return r;
 		}, request, response);
 	}
@@ -177,7 +188,8 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.status = 500;
 			r.path = request.getRequestURI();
 			r.error = name;
-			r.message = message;
+			r.message = Strings.isNullOrEmpty(message) ? null
+					: (message.length() > 100 ? message.substring(0, 100) + "..." : message);
 			return r;
 		}, request, response);
 	}
@@ -186,7 +198,8 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		return responseBodyWithoutLog(() -> {
 			return contentSupplier.get();
 		}, (name, message) -> {
-			return name + "," + message;
+			return name + "," + (Strings.isNullOrEmpty(message) ? null
+					: (message.length() > 100 ? message.substring(0, 100) + "..." : message));
 		}, response);
 	}
 

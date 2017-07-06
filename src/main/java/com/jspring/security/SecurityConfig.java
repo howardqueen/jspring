@@ -20,7 +20,7 @@ import com.jspring.security.service.SecurityFilter;
 import com.jspring.security.service.SecurityResourceService;
 import com.jspring.security.service.SecurityUserService;
 import com.jspring.Strings;
-import com.jspring.data.CrudRepository;
+import com.jspring.data.CrudIntegerRepository;
 import com.jspring.data.SqlExecutor;
 import com.jspring.security.domain.*;
 
@@ -132,33 +132,33 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	@Bean
-	public CrudRepository<SecurityUserRole> securityUserRoleRepository() {
-		return new CrudRepository<SecurityUserRole>(sqlExecutor, SecurityUserRole.class);
+	public CrudIntegerRepository<SecurityUserRole> securityUserRoleRepository() {
+		return new CrudIntegerRepository<SecurityUserRole>(sqlExecutor, SecurityUserRole.class);
 	}
 
 	@Bean
-	public CrudRepository<SecurityRole> securityRoleRepository() {
-		return new CrudRepository<SecurityRole>(sqlExecutor, SecurityRole.class);
+	public CrudIntegerRepository<SecurityRole> securityRoleRepository() {
+		return new CrudIntegerRepository<SecurityRole>(sqlExecutor, SecurityRole.class);
 	}
 
 	@Bean
-	public CrudRepository<SecurityRoleMenu> securityRoleMenuRepository() {
-		return new CrudRepository<SecurityRoleMenu>(sqlExecutor, SecurityRoleMenu.class);
+	public CrudIntegerRepository<SecurityRoleMenu> securityRoleMenuRepository() {
+		return new CrudIntegerRepository<SecurityRoleMenu>(sqlExecutor, SecurityRoleMenu.class);
 	}
 
 	@Bean
-	public CrudRepository<SecurityMenu> securityMenuRepository() {
-		return new CrudRepository<SecurityMenu>(sqlExecutor, SecurityMenu.class);
+	public CrudIntegerRepository<SecurityMenu> securityMenuRepository() {
+		return new CrudIntegerRepository<SecurityMenu>(sqlExecutor, SecurityMenu.class);
 	}
 
 	@Bean
-	public CrudRepository<SecurityMenuResource> securityMenuResourceRepository() {
-		return new CrudRepository<SecurityMenuResource>(sqlExecutor, SecurityMenuResource.class);
+	public CrudIntegerRepository<SecurityMenuResource> securityMenuResourceRepository() {
+		return new CrudIntegerRepository<SecurityMenuResource>(sqlExecutor, SecurityMenuResource.class);
 	}
 
 	@Bean
-	public CrudRepository<SecurityResource> securityResourceRepository() {
-		return new CrudRepository<SecurityResource>(sqlExecutor, SecurityResource.class);
+	public CrudIntegerRepository<SecurityResource> securityResourceRepository() {
+		return new CrudIntegerRepository<SecurityResource>(sqlExecutor, SecurityResource.class);
 	}
 
 	@SuppressWarnings({ "unchecked" })
@@ -166,7 +166,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	public SecurityResourceService securityResourceService() {
 		return new SecurityResourceService(
 				(SecurityUserRepository<?>) this.getApplicationContext().getBean("securityUserRepository"),
-				(CrudRepository<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository"));
+				(CrudIntegerRepository<SecurityResource>) this.getApplicationContext().getBean("securityResourceRepository"));
 	}
 
 }

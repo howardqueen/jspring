@@ -25,18 +25,18 @@ public final class JsonSerializer {
 	}
 
 	public static <T> ISerializer<T> newNonGenericSerializer(Class<T> tClass) {
-		return new t<T>(tClass);
+		return new NonGeneric<T>(tClass);
 	}
 
 	public static <T> ISerializer<T> newGenericSerializer(TypeToken<T> tTypeToken) {
-		return new t2<T>(tTypeToken.getType());
+		return new Generic<T>(tTypeToken.getType());
 	}
 
-	private static class t<T> implements ISerializer<T> {
+	private static class NonGeneric<T> implements ISerializer<T> {
 
 		private final Class<T> classOfT;
 
-		public t(Class<T> classOfT) {
+		public NonGeneric(Class<T> classOfT) {
 			this.classOfT = classOfT;
 		}
 
@@ -56,10 +56,10 @@ public final class JsonSerializer {
 		}
 	}
 
-	private static class t2<T> implements ISerializer<T> {
+	private static class   Generic<T> implements ISerializer<T> {
 		private final Type genericType;
 
-		public t2(Type genericType) {
+		public Generic(Type genericType) {
 			this.genericType = genericType;
 		}
 

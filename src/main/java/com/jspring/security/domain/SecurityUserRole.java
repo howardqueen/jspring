@@ -14,7 +14,7 @@ public class SecurityUserRole {
 	}
 
 	@Id
-	public Integer userId;
+	public Long userId;
 	@Id
 	public Integer roleId;
 }

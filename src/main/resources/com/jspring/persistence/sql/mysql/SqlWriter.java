@@ -1,21 +1,21 @@
 package com.jspring.persistence.sql.mysql;
 
-import com.jspring.data.MetaEntity;
+import com.jspring.data.JEntity;
 
 final class SqlWriter {
 
 	// //////////////////
 	// /// ENTITY CLASS
 	// //////////////////
-	private final MetaEntity<?> entityInfo;
+	private final JEntity<?> entityInfo;
 
-	public MetaEntity<?> getEntityInfo() {
+	public JEntity<?> getEntityInfo() {
 		return entityInfo;
 	}
 
 	private StringBuilder sqlWriter;
 
-	public SqlWriter(MetaEntity<?> entityInfo, StringBuilder sqlWriter) {
+	public SqlWriter(JEntity<?> entityInfo, StringBuilder sqlWriter) {
 		this.entityInfo = entityInfo;
 		this.sqlWriter = sqlWriter;
 	}

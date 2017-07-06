@@ -19,7 +19,7 @@ import com.jspring.date.DateFormats;
 
 @Controller
 public class SimpleErrorController extends AbstractErrorController {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(SimpleErrorController.class.getSimpleName());
 
 	public SimpleErrorController(ErrorAttributes errorAttributes) {
@@ -36,8 +36,8 @@ public class SimpleErrorController extends AbstractErrorController {
 		try {
 			response.setContentType(ContentTypes.html.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
-			log.info("[HTML:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
-					+ body.get("error") + "]" + body.get("message"));
+			log.error("[HTML:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
+					+ body.get("error") + "]\r\n" + body.get("message"));
 			WebConfig.setResponse4IframeAndRest(response);
 			PrintWriter writer = response.getWriter();
 			writer.write("<html>\r\n<head>\r\n<meta charset=\"UTF-8\" />\r\n");
@@ -49,7 +49,8 @@ public class SimpleErrorController extends AbstractErrorController {
 			writer.write(body.get("error").toString());
 			writer.write("</h2>\r\n");
 			writer.write("<p>");
-			writer.write(body.get("message").toString());
+			String message = body.get("message").toString();
+			writer.write(message.length() > 100 ? message.substring(0, 100) + "..." : message);
 			writer.write("</p>\r\n");
 			writer.write("<p>");
 			writer.write("REQUEST_URI:");
@@ -71,15 +72,15 @@ public class SimpleErrorController extends AbstractErrorController {
 		return WebConfig.responseObjectWithoutLog(() -> {
 			response.setContentType(ContentTypes.js.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
-			log.info("[JSON:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
-					+ body.get("error") + "]" + body.get("message"));
+			log.error("[JSON:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
+					+ body.get("error") + "]\r\n" + body.get("message"));
 			RestResult r = new RestResult();
 			r.path = String.valueOf(body.get("path"));
 			r.status = (Integer) body.get("status");
 			r.error = body.get("error").toString();
 			r.message = body.get("message").toString();
-			if (r.message.length() > 200) {
-				r.message = r.message.substring(0, 200) + "...";
+			if (r.message.length() > 100) {
+				r.message = r.message.substring(0, 100) + "...";
 			}
 			return r;
 		}, response);

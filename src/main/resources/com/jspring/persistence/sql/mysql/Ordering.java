@@ -13,7 +13,7 @@ class Ordering<E extends Enum<?>> implements IOrdering<E> {
 		this.writer = writer;
 		writer//
 				.append('`').append(writer.getEntityInfo().getSqlTableName()).append('`').append('.')//
-				.append('`').append(writer.getEntityInfo().getMetaField(column).getSqlColumnName()).append('`');
+				.append('`').append(writer.getEntityInfo().getJField(column).getName4SQL()).append('`');
 	}
 
 	//////////////////

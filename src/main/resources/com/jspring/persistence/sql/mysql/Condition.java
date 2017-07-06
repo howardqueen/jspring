@@ -2,7 +2,7 @@ package com.jspring.persistence.sql.mysql;
 
 import java.util.List;
 
-import com.jspring.data.MetaEntity;
+import com.jspring.data.JEntity;
 import com.jspring.persistence.sql.ICondition;
 
 class Condition<HOLDER> implements ICondition<HOLDER> {
@@ -17,10 +17,10 @@ class Condition<HOLDER> implements ICondition<HOLDER> {
 	public Condition(HOLDER end, SqlWriter writer, Enum<?> column) {
 		this.end = end;
 		this.writer = writer;
-		MetaEntity<?> ei = writer.getEntityInfo();
+		JEntity<?> ei = writer.getEntityInfo();
 		writer.append('`').append(ei.getSqlTableName()).append('`')//
 				.append('.')//
-				.append('`').append(ei.getMetaField(column).getSqlColumnName()).append('`');
+				.append('`').append(ei.getJField(column).getName4SQL()).append('`');
 	}
 
 	//////////////////

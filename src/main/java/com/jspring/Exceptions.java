@@ -30,21 +30,20 @@ public final class Exceptions extends RuntimeException {
 		if (e instanceof Exceptions) {
 			return (Exceptions) e;
 		}
+		//
 		if (e instanceof RuntimeException) {
-			if (!(e instanceof NullPointerException)
-					&& !(e instanceof IllegalArgumentException)
-					&& !(e instanceof IndexOutOfBoundsException)
-					&& !(e instanceof ClassCastException)) {
-				return newInstance(String.format("%s, %s", e.getClass()
-						.getSimpleName(), e.getMessage()));
+			if (e instanceof NullPointerException //
+					|| e instanceof IllegalArgumentException//
+					|| e instanceof IndexOutOfBoundsException//
+					|| e instanceof ClassCastException) {
+				return newInstance(getStackTrace(e));
 			}
-		} else if (e instanceof ClassNotFoundException) {
-			return newInstance(String.format("ClassNotFoundException, %s",
-					e.getMessage()));
+			return newInstance(e.getClass().getName() + ":" + e.getMessage());
 		}
-		if (e instanceof IOException) {
-			return newInstance(String.format("%s, %s", e.getClass()
-					.getSimpleName(), e.getMessage()));
+		//
+		if (e instanceof ClassNotFoundException//
+				|| e instanceof IOException) {
+			return newInstance(e.getClass().getName() + ":" + e.getMessage());
 		}
 		return newInstance(getStackTrace(e));
 	}
@@ -60,27 +59,23 @@ public final class Exceptions extends RuntimeException {
 		return sw.toString();
 	}
 
-	public static Exceptions newInstance(Exceptions innerException,
-			String message) {
+	public static Exceptions newInstance(Exceptions innerException, String message) {
 		return newInstance("%s, %s", message, innerException.getMessage());
 	}
 
-	public static Exceptions newInstance(Exceptions innerException,
-			String format, Object... args) {
+	public static Exceptions newInstance(Exceptions innerException, String format, Object... args) {
 		return newInstance(innerException, String.format(format, args));
 	}
 
-	public static Exceptions newInstance(Exception innerException,
-			String message) {
+	public static Exceptions newInstance(Exception innerException, String message) {
 		if (innerException instanceof Exceptions) {
 			return newInstance("%s, %s", message, innerException.getMessage());
 		}
-		return newInstance("%s, %s, %s", message, innerException.getClass()
-				.getSimpleName(), innerException.getMessage());
+		return newInstance("%s, %s, %s", message, innerException.getClass().getSimpleName(),
+				innerException.getMessage());
 	}
 
-	public static Exceptions newInstance(Exception innerException,
-			String format, Object... args) {
+	public static Exceptions newInstance(Exception innerException, String format, Object... args) {
 		return newInstance(innerException, String.format(format, args));
 	}
 
@@ -88,33 +83,27 @@ public final class Exceptions extends RuntimeException {
 		return newInstance("Illegal argument: \"%s\"", name);
 	}
 
-	public static Exceptions newIllegalArgumentException(String name,
-			String functionSource) {
+	public static Exceptions newIllegalArgumentException(String name, String functionSource) {
 		return newInstance("[%s]Illegal argument: \"%s\"", functionSource, name);
 	}
 
-	public static Exceptions newIllegalArgumentException(String name,
-			String functionSource, String value) {
-		return newInstance("[%s]Illegal argument: \"%s\", %s", functionSource,
-				name, value);
+	public static Exceptions newIllegalArgumentException(String name, String functionSource, String value) {
+		return newInstance("[%s]Illegal argument: \"%s\", %s", functionSource, name, value);
 	}
 
 	public static Exceptions newNullArgumentException(String name) {
 		return newInstance("Argument can't be null or empty: \"%s\"", name);
 	}
 
-	public static Exceptions newNullArgumentException(String name,
-			String functionSource) {
-		return newInstance("[%s]Argument can't be null or empty: \"%s\"",
-				functionSource, name);
+	public static Exceptions newNullArgumentException(String name, String functionSource) {
+		return newInstance("[%s]Argument can't be null or empty: \"%s\"", functionSource, name);
 	}
 
 	public static Exceptions newIllegalConfigException(String name) {
 		return newInstance("Illegal config: \"%s\"", name);
 	}
 
-	public static Exceptions newIllegalConfigException(String name,
-			String filename) {
+	public static Exceptions newIllegalConfigException(String name, String filename) {
 		return newInstance("Illegal config in %s: \"%s\"", filename, name);
 	}
 

@@ -123,8 +123,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 				writer.write(e.getMessage());
 			} catch (Exception e1) {
 			}
-			log.warn("[CSV:" + request.getMethod() + ":" + request.getRequestURI() + "][500][" + er.getClass().getName()
-					+ "]" + e.getMessage());
+			log.warn("[CSV:" + request.getMethod() + ":" + request.getRequestURI() + "][500]" + e.getMessage());
 		}
 	}
 
@@ -152,8 +151,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			Exceptions e = Exceptions.newInstance(er);
 			R r = errorFunction.apply(er.getClass().getName(), e.getMessage());
 			setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500]["
-					+ er.getClass().getName() + "]" + e.getMessage());
+			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500]" + e.getMessage());
 			return r;
 		}
 	}

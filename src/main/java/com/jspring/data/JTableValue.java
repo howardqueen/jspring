@@ -48,7 +48,7 @@ public class JTableValue {
 		return Stream.of(columns)//
 				.filter(a -> a.getFieldName().equals(name))//
 				.findFirst()//
-				.get();
+				.orElseThrow(() -> Exceptions.newInstance("Cannot find " + domain.getName() + "/" + name));
 	}
 
 	//

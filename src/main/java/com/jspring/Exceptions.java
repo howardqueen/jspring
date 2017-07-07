@@ -31,15 +31,15 @@ public final class Exceptions extends RuntimeException {
 			return (Exceptions) e;
 		}
 		//
-		if (e instanceof RuntimeException) {
-			if (e instanceof NullPointerException //
-					|| e instanceof IllegalArgumentException//
-					|| e instanceof IndexOutOfBoundsException//
-					|| e instanceof ClassCastException) {
-				return newInstance(getStackTrace(e));
-			}
-			return newInstance(e.getClass().getName() + ":" + e.getMessage());
-		}
+		// if (e instanceof RuntimeException) {
+		// if (e instanceof NullPointerException //
+		// || e instanceof IllegalArgumentException//
+		// || e instanceof IndexOutOfBoundsException//
+		// || e instanceof ClassCastException) {
+		// return newInstance(getStackTrace(e));
+		// }
+		// return newInstance(e.getClass().getName() + ":" + e.getMessage());
+		// }
 		//
 		if (e instanceof ClassNotFoundException//
 				|| e instanceof IOException) {

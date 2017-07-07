@@ -26,7 +26,6 @@ import com.jspring.Exceptions;
 import com.jspring.collections.KeyValue;
 import com.jspring.data.CrudRepository;
 import com.jspring.data.JColumnValue;
-import com.jspring.data.JTableValue;
 import com.jspring.data.OrderBy;
 import com.jspring.data.Where;
 import com.jspring.data.SqlExecutor;
@@ -54,22 +53,23 @@ public abstract class CrudController implements ApplicationContextAware {
 	@Autowired
 	private SqlExecutor sqlExecutor;
 
-	private List<KeyValue<String, CrudRepository<?, ?>>> repositories = new ArrayList<>();
+	private static List<KeyValue<String, CrudRepository<?, ?>>> repositories = new ArrayList<>();
 
 	protected CrudRepository<?, ?> getRepository(String domainName) {
+		String simpleClassName = (char) (domainName.charAt(0) - 32) + domainName.substring(1);
+		Class<?> domain = getVisitDomain(simpleClassName);
+		//
 		Optional<KeyValue<String, CrudRepository<?, ?>>> kv = repositories.stream()//
 				.filter(a -> a.key.equals(domainName)).findFirst();
 		if (kv.isPresent()) {
 			return kv.get().value;
 		}
-		synchronized (this) {
+		synchronized (repositories) {
 			kv = repositories.stream()//
 					.filter(a -> a.key.equals(domainName)).findFirst();
 			if (kv.isPresent()) {
 				return kv.get().value;
 			}
-			String simpleClassName = (char) (domainName.charAt(0) - 32) + domainName.substring(1);
-			Class<?> domain = visit(simpleClassName);
 			String bean = domainName + "Repository";
 			if (getContext().containsBean(bean)) {
 				log.info("LOAD REPOSITORY: " + bean);
@@ -77,58 +77,50 @@ public abstract class CrudController implements ApplicationContextAware {
 				repositories.add(new KeyValue<>(domainName, dao));
 				return dao;
 			}
-			// Class<?> t = Stream.of(getAuthedDomains())//
-			// .filter(a -> a.getSimpleName().equals(simpleClassName))//
-			// .findFirst()//
-			// .orElseThrow(() -> Exceptions.newInstance("Forbidden domain: " +
-			// domain));
-			JTableValue table = JTableValue.of(domain);
 			@SuppressWarnings({ "unchecked", "rawtypes" })
-			CrudRepository<?, ?> dao = new CrudRepository(sqlExecutor, domain, table.primaryKey.field.getType());
+			CrudRepository<?, ?> dao = new CrudRepository(sqlExecutor, domain);
 			log.info("CREATE REPOSITORY: " + bean);
 			repositories.add(new KeyValue<>(domainName, dao));
 			return dao;
 		}
 	}
 
-	private List<KeyValue<Class<?>, ISerializer<?>>> serializers = new ArrayList<>();
+	private static List<KeyValue<Class<?>, ISerializer<?>>> serializers = new ArrayList<>();
 
 	protected ISerializer<?> getSerializer(Class<?> entityClass) {
-		ISerializer<?> r = serializers.stream()//
+		Optional<?> r = serializers.stream()//
 				.filter(a -> a.key.equals(entityClass))//
 				.map(a -> a.value)//
-				.findFirst()//
-				.get();
-		if (null != r) {
-			return r;
+				.findFirst();
+		if (r.isPresent()) {
+			return (ISerializer<?>) r.get();
 		}
 		synchronized (serializers) {
 			r = serializers.stream()//
 					.filter(a -> a.key.equals(entityClass))//
 					.map(a -> a.value)//
-					.findFirst()//
-					.get();
-			if (null != r) {
-				return r;
+					.findFirst();
+			if (r.isPresent()) {
+				return (ISerializer<?>) r.get();
 			}
-			r = JsonSerializer.newNonGenericSerializer(entityClass);
-			serializers.add(new KeyValue<>(entityClass, r));
-			return r;
+			ISerializer<?> t = JsonSerializer.newNonGenericSerializer(entityClass);
+			serializers.add(new KeyValue<>(entityClass, t));
+			return t;
 		}
 	}
 
 	///////////////////
 	/// ABSTRACT
 	///////////////////
-	protected abstract Class<?> visit(String domainSimpleClassName);
+	protected abstract Class<?> getVisitDomain(String domainSimpleClassName);
 
-	protected abstract Where[] readFilters(Class<?> domain, String filters);
+	protected abstract Where[] getReadFilters(Class<?> domain, String filters);
 
-	protected abstract Object readEntity(Object entity);
+	protected abstract Object getReadEntity(Object entity);
 
-	protected abstract Object writeEntity(Object entity);
+	protected abstract Object getWriteEntity(Object entity);
 
-	protected abstract UnaryOperator<String> writeMap(Class<?> domain, UnaryOperator<String> map);
+	protected abstract UnaryOperator<String> getWriteMap(Class<?> domain, UnaryOperator<String> map);
 
 	///////////////////
 	/// CRUD
@@ -137,6 +129,29 @@ public abstract class CrudController implements ApplicationContextAware {
 	@RequestMapping(path = "crud", method = RequestMethod.GET)
 	public void getHelp(HttpServletRequest request, HttpServletResponse response) {
 		// TODO
+	}
+
+	///////////////////
+	/// CRUD/CONF/*
+	///////////////////
+	@ResponseBody
+	@RequestMapping(path = "crud/conf/{domain}", method = RequestMethod.GET)
+	public RestResult getConf(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
+		return WebConfig.responseObject(() -> getRepository(domain).getTable().getView(), //
+				request, response);
+	}
+
+	///////////////////
+	/// CRUD/CONF/*/*
+	///////////////////
+	@ResponseBody
+	@RequestMapping(path = "crud/conf/{domain}/{option}", method = RequestMethod.GET)
+	public RestResult getConfOptions(@PathVariable String domain, //
+			@PathVariable String option, //
+			@RequestParam(defaultValue = "100") int size, //
+			HttpServletRequest request, HttpServletResponse response) {
+		return WebConfig.responseObject(() -> getRepository(domain).findOptions(option, size), //
+				request, response);
 	}
 
 	///////////////////
@@ -152,7 +167,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			try (BufferedReader br = request.getReader()) {
 				String line;
 				while (null != (line = br.readLine())) {
-					objs.add(writeEntity(getSerializer(dao.getTable().domain).deserialize(line)));
+					objs.add(getWriteEntity(getSerializer(dao.getTable().domain).deserialize(line)));
 				}
 			} catch (IOException e) {
 				throw Exceptions.newInstance(e);
@@ -171,7 +186,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			HttpServletRequest request, HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?, ?> dao = getRepository(domain);
-			Where[] ws = readFilters(dao.getDomain(), filters);
+			Where[] ws = getReadFilters(dao.getDomain(), filters);
 			RestPage p = new RestPage();
 			p.total = dao.countAll(ws);
 			p.rows = dao.findAll(page, size, OrderBy.deserialize(sorts), ws);
@@ -192,7 +207,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			try (BufferedReader br = request.getReader()) {
 				String line;
 				while (null != (line = br.readLine())) {
-					objs.add(writeEntity(getSerializer(dao.getTable().domain).deserialize(line)));
+					objs.add(getWriteEntity(getSerializer(dao.getTable().domain).deserialize(line)));
 				}
 			} catch (IOException e) {
 				throw Exceptions.newInstance(e);
@@ -211,7 +226,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			try (BufferedReader br = request.getReader()) {
 				String id;
 				while (null != (id = br.readLine())) {
-					writeEntity(dao.findOneByKey(id));
+					getWriteEntity(dao.findOneByKey(id));
 					ids.add(id);
 				}
 			} catch (IOException e) {
@@ -230,7 +245,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?, ?> dao = getRepository(domain);
-			return dao.insertOneSkipNull(writeMap(dao.getDomain(), (a) -> request.getParameter(a)));
+			return dao.insertOneSkipNull(getWriteMap(dao.getDomain(), (a) -> request.getParameter(a)));
 		}, request, response);
 	}
 
@@ -240,7 +255,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?, ?> dao = getRepository(domain);
-			return dao.insertIgnoreOneSkipNull(writeMap(dao.getDomain(), (a) -> request.getParameter(a)));
+			return dao.insertIgnoreOneSkipNull(getWriteMap(dao.getDomain(), (a) -> request.getParameter(a)));
 		}, request, response);
 	}
 
@@ -250,7 +265,7 @@ public abstract class CrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?, ?> dao = getRepository(domain);
-			return dao.replaceOneSkipNull(writeMap(dao.getDomain(), (a) -> request.getParameter(a)));
+			return dao.replaceOneSkipNull(getWriteMap(dao.getDomain(), (a) -> request.getParameter(a)));
 		}, request, response);
 	}
 
@@ -258,7 +273,7 @@ public abstract class CrudController implements ApplicationContextAware {
 	@RequestMapping(path = "crud/rest/{domain}/{id}", method = RequestMethod.GET)
 	public RestResult getOne(@PathVariable String domain, @PathVariable String id, HttpServletRequest request,
 			HttpServletResponse response) {
-		return WebConfig.responseObject(() -> readEntity(getRepository(domain).findOneByKey(id)), //
+		return WebConfig.responseObject(() -> getReadEntity(getRepository(domain).findOneByKey(id)), //
 				request, response);
 	}
 
@@ -268,8 +283,8 @@ public abstract class CrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?, ?> dao = getRepository(domain);
-			writeEntity(dao.findOneByKey(id));
-			return dao.updateOneSkipNullByKey(writeMap(dao.getDomain(), (a) -> request.getParameter(a)), id);
+			getWriteEntity(dao.findOneByKey(id));
+			return dao.updateOneSkipNullByKey(getWriteMap(dao.getDomain(), (a) -> request.getParameter(a)), id);
 		}, request, response);
 	}
 
@@ -279,18 +294,9 @@ public abstract class CrudController implements ApplicationContextAware {
 			HttpServletResponse response) {
 		return WebConfig.responseObject(() -> {
 			CrudRepository<?, ?> dao = getRepository(domain);
-			writeEntity(dao.findOneByKey(id));
+			getWriteEntity(dao.findOneByKey(id));
 			return dao.deleteOneByKey(id);
 		}, request, response);
-	}
-
-	///////////////////
-	/// CRUD/CONF/*
-	///////////////////
-	@ResponseBody
-	@RequestMapping(path = "crud/conf/{domain}", method = RequestMethod.GET)
-	public RestResult getConf(@PathVariable String domain, HttpServletRequest request, HttpServletResponse response) {
-		return WebConfig.responseObject(() -> getRepository(domain).getTable().getView(), request, response);
 	}
 
 	///////////////////

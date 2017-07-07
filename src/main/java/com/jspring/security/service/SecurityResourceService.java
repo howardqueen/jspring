@@ -19,7 +19,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import com.jspring.security.domain.SecurityResource;
 import com.jspring.security.domain.SecurityUserRepository;
 import com.jspring.security.domain.SecurityRole;
-import com.jspring.data.CrudIntegerRepository;
+import com.jspring.data.CrudRepository;
 
 /**
  * 针对各资源获取对应的权限配置
@@ -48,10 +48,10 @@ public class SecurityResourceService implements FilterInvocationSecurityMetadata
 	}
 
 	private final SecurityUserRepository<?> securityUserRepository;
-	private final CrudIntegerRepository<SecurityResource> securityResourceRepository;
+	private final CrudRepository<SecurityResource, Integer> securityResourceRepository;
 
 	public SecurityResourceService(SecurityUserRepository<?> securityUserRepository,
-			CrudIntegerRepository<SecurityResource> securityResourceRepository) {
+			CrudRepository<SecurityResource, Integer> securityResourceRepository) {
 		this.securityUserRepository = securityUserRepository;
 		this.securityResourceRepository = securityResourceRepository;
 	}

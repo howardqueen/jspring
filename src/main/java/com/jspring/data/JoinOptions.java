@@ -8,18 +8,16 @@ import java.lang.annotation.Target;
 
 @Target({ TYPE })
 @Retention(RUNTIME)
-public @interface JoinTable {
+public @interface JoinOptions {
 
-	String joinType() default "INNER";
+	String domain() default "";
 
 	String schema() default "";
 
 	String name() default "";
 
-	String nickName() default "";
+	String valueColumn() default "";
 
-	String joinColumn() default "";
-
-	String referencedColumn() default "";
+	String textColumn() default "";
 
 }

@@ -11,8 +11,8 @@ public class CrudRepository<T, ID extends Serializable> extends Repository<T, ID
 		super();
 	}
 
-	public CrudRepository(SqlExecutor sqlExecutor, Class<T> domain, Class<ID> idClass) {
-		super(sqlExecutor, domain, idClass);
+	public CrudRepository(SqlExecutor sqlExecutor, Class<T> domain) {
+		super(sqlExecutor, domain);
 	}
 
 	//////////////////

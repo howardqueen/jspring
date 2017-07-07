@@ -55,7 +55,7 @@ public class SqlBuilder {
 			} else {
 				isAppend = true;
 			}
-			sql.append(column.getSQLColumn());
+			sql.append(column.getColumnSQL());
 		}
 		sql.append(" FROM ");
 		sql.append(table.getSQLJoinedTables());

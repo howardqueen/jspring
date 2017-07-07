@@ -2,12 +2,12 @@ package com.jspring.security.domain;
 
 import java.util.List;
 
-import com.jspring.data.CrudIntegerRepository;
+import com.jspring.data.CrudRepository;
 import com.jspring.data.SqlExecutor;
 import com.jspring.data.Where;
 import com.jspring.security.domain.SecurityRole;
 
-public class SecurityUserRepository<T extends SecurityUser> extends CrudIntegerRepository<T> {
+public class SecurityUserRepository<T extends SecurityUser> extends CrudRepository<T, Integer> {
 
 	public SecurityUserRepository(SqlExecutor sqlExecutor, Class<T> entityClass) {
 		super(sqlExecutor, entityClass);

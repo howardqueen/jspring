@@ -69,7 +69,7 @@ public @interface JColumn {
 	 * column is assumed to be in the primary table.
 	 */
 	@AliasFor(annotation = Column.class, attribute = "table")
-	String referencedTable() default "";
+	String table() default "";
 
 	/**
 	 * (Optional) The column length. (Applies only if a string-valued column is
@@ -99,10 +99,16 @@ public @interface JColumn {
 
 	String indexName() default "";
 
-	String referencedColumn() default "";
+	/**
+	 * 
+	 * @return
+	 */
+	String options() default "";
+
+	String joinOptions() default "";
 
 	String joinColumn() default "";
-
+	//
 	String defaultValue() default "";
 
 	String expression() default "";

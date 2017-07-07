@@ -88,7 +88,7 @@ public final class SqlExecutor {
 	protected <T> RowMapper<T> getRowMapper(JColumnValue[] columns) {
 		return (rs, i) -> {
 			try {
-				Object domain = columns[0].tableData.domain.newInstance();
+				Object domain = columns[0].tableValue.domain.newInstance();
 				p: for (JColumnValue column : columns) {
 					switch (column.type) {
 					case String:
@@ -229,7 +229,7 @@ public final class SqlExecutor {
 	 * 
 	 */
 	public <E> List<E> queryEntities(String schema, JColumnValue[] columns, String sql, Object... args) {
-		log.debug("List<[Entity]" + columns[0].tableData.domain.getSimpleName() + ">: " + sql);
+		log.debug("List<[Entity]" + columns[0].tableValue.domain.getSimpleName() + ">: " + sql);
 		return getJdbcTemplate(schema).query(sql, args, getRowMapper(columns));
 	}
 
@@ -237,7 +237,7 @@ public final class SqlExecutor {
 	 * 获取首个实体
 	 */
 	public <E> E queryEntity(String schema, JColumnValue[] columns, String sql, Object... args) {
-		log.debug("[Entity]" + columns[0].tableData.domain.getSimpleName() + ": " + sql);
+		log.debug("[Entity]" + columns[0].tableValue.domain.getSimpleName() + ": " + sql);
 		try {
 			return getJdbcTemplate(schema).queryForObject(sql, args, getRowMapper(columns));
 		} catch (EmptyResultDataAccessException e) {

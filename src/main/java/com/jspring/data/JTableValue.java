@@ -102,14 +102,19 @@ public class JTableValue {
 					sql.append(".`");
 					sql.append(a.joinColumn());
 					sql.append("` = ");
-					if (Strings.isNullOrEmpty(a.referencedTable())) {
+					if (Strings.isNullOrEmpty(a.name())) {
 						sql.append(_sqlColumnPre);
 						sql.append('`');
 						sql.append(a.referencedColumn());
 						sql.append('`');
 					} else {
+						if (!Strings.isNullOrEmpty(a.schema())) {
+							sql.append('`');
+							sql.append(a.schema());
+							sql.append("`.");
+						}
 						sql.append('`');
-						sql.append(a.referencedTable());
+						sql.append(a.name());
 						sql.append("`.`");
 						sql.append(a.referencedColumn());
 						sql.append('`');
@@ -161,6 +166,12 @@ public class JTableValue {
 	//////////////////
 	/// MORE
 	//////////////////
+
+	public JoinOptions getOptions(String optionDomain) {
+		return Stream.of(domain.getAnnotationsByType(JoinOptions.class)).filter(a -> a.domain().equals(optionDomain))
+				.findFirst().orElseThrow(() -> Exceptions.newInstance(
+						domain.getName() + ": cannot find @JoinOption with property domain=\"" + optionDomain + "\""));
+	}
 
 	private JColumnValue[] findAllableColumns;
 

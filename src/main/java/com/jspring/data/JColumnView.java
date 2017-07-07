@@ -24,11 +24,13 @@ public class JColumnView {
 	public boolean required;// required
 	public boolean findOnable;// update dialog
 	public Boolean updatable;// update dialog
+	//
+	public String options;
 
 	public JColumnView(JColumnValue column) {
 		this.type = JColumnTypes.of(column.field);
 		if (this.type == JColumnTypes.Unknown) {
-			throw Exceptions.newIllegalArgumentException("Unsupport field type: " + column.tableData.domain.getName()
+			throw Exceptions.newIllegalArgumentException("Unsupport field type: " + column.tableValue.domain.getName()
 					+ "/[" + column.field.getType().getName() + "]" + column.field.getName());
 		}
 		//
@@ -58,13 +60,14 @@ public class JColumnView {
 			this.updatable = column.isUpdatable();
 			this.required = column.nullable ? false : true;
 		} else {
-			this.filterable = false;
 			this.insertable = false;
 			this.updatable = false;
 			this.required = false;
 		}
+		this.filterable = column.isFilterable();
 		this.findAllable = column.findAllable;
 		this.findOnable = column.findOnable;
+		this.options = column.options;
 	}
 
 }

@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.jspring.Strings;
+
 public class Repository<T, ID extends Serializable> {
 
 	//////////////////
@@ -30,28 +32,19 @@ public class Repository<T, ID extends Serializable> {
 		return (Class<T>) getTable().domain;
 	}
 
-	private final Class<ID> _idClass;
-
-	public Class<ID> getIdClass() {
-		return _idClass;
-	}
-
 	protected SqlBuilder sql() {
 		return new SqlBuilder(getTable());
 	}
 
-	@SuppressWarnings("unchecked")
 	public Repository() {
 		Type genType = getClass().getGenericSuperclass();
 		Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
 		_table = JTableValue.of((Class<?>) params[0]);
-		_idClass = (Class<ID>) params[1];
 	}
 
-	public Repository(SqlExecutor sqlExecutor, Class<T> domain, Class<ID> idClass) {
+	public Repository(SqlExecutor sqlExecutor, Class<T> domain) {
 		this._sqlExecutor = sqlExecutor;
 		_table = JTableValue.of(domain);
-		_idClass = idClass;
 	}
 
 	//////////////////
@@ -181,6 +174,16 @@ public class Repository<T, ID extends Serializable> {
 				.select(getTable().getFindOnableColumns())//
 				.where(Where.of(getTable().primaryKey).equalWith(id))//
 				.limit(1, 1).executeArgsNotNull((a, b) -> queryEntity(getTable().getFindOnableColumns(), a, b));
+	}
+
+	public List<JoinOptionItem> findOptions(String optionDomain, int size) {
+		JoinOptions jo = this.getTable().getOptions(optionDomain);
+		if (Strings.isNullOrEmpty(jo.schema())) {
+			return queryPojos(JoinOptionItem.class, "SELECT `" + jo.valueColumn() + "` AS `value`, `" + jo.textColumn()
+					+ "` AS `text` FROM `" + jo.name() + "` LIMIT 1," + size);
+		}
+		return queryPojos(JoinOptionItem.class, "SELECT `" + jo.valueColumn() + "` AS `value`, `" + jo.textColumn()
+				+ "` AS `text` FROM `" + jo.schema() + "`.`" + jo.name() + "` LIMIT 1," + size);
 	}
 
 }

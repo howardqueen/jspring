@@ -17,7 +17,7 @@ public final class AdminCrudController extends CrudController {
 	private String[] domainPackages;
 
 	@Override
-	protected Class<?> visit(String domainSimpleClassName) {
+	protected Class<?> getVisitDomain(String domainSimpleClassName) {
 		Class<?> t = null;
 		String domain = null;
 		for (String p : domainPackages) {
@@ -36,22 +36,22 @@ public final class AdminCrudController extends CrudController {
 	}
 
 	@Override
-	protected Where[] readFilters(Class<?> domain, String filters) {
+	protected Where[] getReadFilters(Class<?> domain, String filters) {
 		return Where.deserialize(filters);
 	}
 
 	@Override
-	protected Object readEntity(Object entity) {
+	protected Object getReadEntity(Object entity) {
 		return entity;
 	}
 
 	@Override
-	protected Object writeEntity(Object entity) {
+	protected Object getWriteEntity(Object entity) {
 		return entity;
 	}
 
 	@Override
-	protected UnaryOperator<String> writeMap(Class<?> domain, UnaryOperator<String> map) {
+	protected UnaryOperator<String> getWriteMap(Class<?> domain, UnaryOperator<String> map) {
 		return map;
 	}
 

@@ -17,7 +17,7 @@ public class JColumnValue {
 	}
 
 	public final JColumnTypes type;
-	public final JTableValue tableData;
+	public final JTableValue tableValue;
 	public final Field field;
 	// @Basic
 	private final String name;
@@ -33,24 +33,23 @@ public class JColumnValue {
 	public boolean nullable = true;
 	private boolean _insertable = true;
 	private boolean _updatable = true;
-	// (select name from referencedTable where xxx limit 1)
-	public String referencedTable = "";
-	// (select name from referencedTable where rt.referencedName =
-	// joinColumn limit 1)
-	public String referencedName = "";
+	// @Join/Options
+	public String table = "";
+	public String options = "";
+	public String joinOptions = "";
 	public String joinColumn = "";
-	//
+	// @Definition
 	public int length = 255;
 	public int precision = 0;
 	public int scale = 0;
 
-	private JColumnValue(JTableValue table, Field field) {
+	private JColumnValue(JTableValue tableValue, Field field) {
 		this.type = JColumnTypes.of(field);
 		if (this.type == JColumnTypes.Unknown) {
-			throw Exceptions.newIllegalArgumentException("Unsupport field type: " + table.domain.getName() + "/["
+			throw Exceptions.newIllegalArgumentException("Unsupport field type: " + tableValue.domain.getName() + "/["
 					+ field.getType().getName() + "]" + field.getName());
 		}
-		this.tableData = table;
+		this.tableValue = tableValue;
 		this.field = field;
 		//
 		JColumn jc = field.getType().getAnnotation(JColumn.class);
@@ -63,8 +62,9 @@ public class JColumnValue {
 		this.name = Strings.isNullOrEmpty(jc.name()) ? field.getName() : jc.name();
 		this.title = Strings.isNullOrEmpty(jc.title()) ? this.name : jc.title();
 		//
-		this.referencedTable = jc.referencedTable();
-		this.referencedName = jc.referencedColumn();
+		this.table = jc.table();
+		this.options = jc.options();
+		this.joinOptions = jc.joinOptions();
 		this.joinColumn = jc.joinColumn();
 		// @More
 		this.indexName = jc.indexName();
@@ -85,13 +85,13 @@ public class JColumnValue {
 
 	public boolean isFilterable() {
 		return Strings.isNullOrEmpty(_expression)//
-				&& (Strings.isNullOrEmpty(referencedTable) //
-						|| Strings.isNullOrEmpty(referencedName));
+				&& Strings.isNullOrEmpty(joinOptions);
 	}
 
 	public boolean isEditable() {// insert and update
 		return Strings.isNullOrEmpty(_expression)//
-				&& Strings.isNullOrEmpty(referencedTable);
+				&& Strings.isNullOrEmpty(table)//
+				&& Strings.isNullOrEmpty(joinOptions);
 	}
 
 	private String _sqlColumn;
@@ -104,7 +104,7 @@ public class JColumnValue {
 		return field.getName();
 	}
 
-	public String getSQLColumn() {
+	public String getColumnSQL() {
 		if (null != _sqlColumn) {
 			return _sqlColumn;
 		}
@@ -113,25 +113,25 @@ public class JColumnValue {
 			return _sqlColumn;
 
 		}
-		if (Strings.isNullOrEmpty(referencedTable)) {
-			_sqlColumn = tableData.getSQLColumnPre() + '`' + name + "`";
+		if (!Strings.isNullOrEmpty(table)) {
+			_sqlColumn = "`" + table + "`.`" + name + "`";
 			return _sqlColumn;
 		}
-		if (Strings.isNullOrEmpty(referencedName)) {
-			_sqlColumn = "`" + referencedTable + "`.`" + name + "`";
+		if (Strings.isNullOrEmpty(joinOptions)) {
+			_sqlColumn = tableValue.getSQLColumnPre() + '`' + name + "`";
 			return _sqlColumn;
 		}
 		if (Strings.isNullOrEmpty(joinColumn)) {
-			throw Exceptions.newInstance("[" + tableData.domain.getName() + "]." + field.getName()
-					+ ": @JColumn field joinColumn cannot be null when referencedName has value.");
+			throw Exceptions.newInstance(tableValue.domain.getName() + "/" + getFieldName()
+					+ "/@JColumn: property \"joinColumn\" cannot be null when \"joinOptions\" contains value");
 		}
-		//
-		_sqlColumn = "(SELECT `" + name + "` FROM `" + referencedTable//
+		JoinOptions options = tableValue.getOptions(joinOptions);
+		_sqlColumn = "(SELECT `" + options.textColumn() + "` FROM `" + options.name()//
 				+ "` WHERE "
-				+ (Strings.isNullOrEmpty(tableData.getSQLColumnPre()) ? "`" + tableData.getName() + "`."
-						: tableData.getSQLColumnPre())
+				+ (Strings.isNullOrEmpty(tableValue.getSQLColumnPre()) ? "`" + tableValue.getName() + "`."
+						: tableValue.getSQLColumnPre())
 				+ "`"//
-				+ joinColumn + "`=`" + referencedName + "` LIMIT 1) AS `" + name + "`";
+				+ joinColumn + "`=`" + options.valueColumn() + "` LIMIT 1) AS `" + name + "`";
 		return _sqlColumn;
 	}
 
@@ -160,7 +160,7 @@ public class JColumnValue {
 		}
 		return updatable.booleanValue();
 	}
-
+	
 	public String getColumnDefinition() {
 		if (isEditable()) {
 			switch (type) {

@@ -17,7 +17,7 @@ public enum JColumnTypes {
 		switch (field.getType().getSimpleName()) {
 		case "Date":
 			JsonFormat jf = field.getType().getAnnotation(JsonFormat.class);
-			if (!Strings.isNullOrEmpty(jf.pattern()) && jf.pattern().equals("yyyy-MM-dd")) {
+			if (null != jf && !Strings.isNullOrEmpty(jf.pattern()) && jf.pattern().equals("yyyy-MM-dd")) {
 				return Date;
 			}
 			return DateTime;

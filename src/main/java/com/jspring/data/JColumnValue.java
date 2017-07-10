@@ -3,6 +3,7 @@ package com.jspring.data;
 import java.lang.reflect.Field;
 import java.util.Date;
 
+import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 
@@ -54,8 +55,36 @@ public class JColumnValue {
 		//
 		JColumn jc = field.getType().getAnnotation(JColumn.class);
 		if (null == jc) {
-			this.name = field.getName();
-			this.title = this.name;
+			Column c = field.getType().getAnnotation(Column.class);
+			if (null == c) {
+				this.name = field.getName();
+				this.title = this.name;
+				return;
+			}
+			// @Basic
+			this.name = Strings.isNullOrEmpty(c.name()) ? field.getName() : c.name();
+			this.title = this.name;// Strings.isNullOrEmpty(c.title()) ?
+									// this.name : c.title();
+			//
+			this.table = c.table();
+			// this.options = c.options();
+			// this.joinOptions = c.joinOptions();
+			// this.joinColumn = c.joinColumn();
+			// // @More
+			// this.indexName = c.indexName();
+			// this.defaultValue = c.defaultValue();
+			// this._expression = c.expression();
+			// this.findAllable = c.findAllable();
+			// this.findOnable = c.findOnable();
+			// @Column
+			this.unique = c.unique();
+			this.nullable = c.nullable();
+			this._insertable = c.insertable();
+			this._updatable = c.updatable();
+			//
+			this.length = c.length();
+			this.precision = c.precision();
+			this.scale = c.scale();
 			return;
 		}
 		// @Basic
@@ -160,7 +189,7 @@ public class JColumnValue {
 		}
 		return updatable.booleanValue();
 	}
-	
+
 	public String getColumnDefinition() {
 		if (isEditable()) {
 			switch (type) {

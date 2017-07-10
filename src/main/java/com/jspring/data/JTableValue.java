@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 import com.jspring.Exceptions;
 import com.jspring.Strings;
@@ -48,7 +49,7 @@ public class JTableValue {
 		return Stream.of(columns)//
 				.filter(a -> a.getFieldName().equals(name))//
 				.findFirst()//
-				.orElseThrow(() -> Exceptions.newInstance("Cannot find " + domain.getName() + "/" + name));
+				.orElseThrow(() -> Exceptions.newInstance("Cannot find field: " + domain.getName() + "/" + name));
 	}
 
 	//
@@ -148,8 +149,16 @@ public class JTableValue {
 		//
 		JTable table = domain.getAnnotation(JTable.class);
 		if (null == table) {
-			this.schema = "spring";
-			this.name = domain.getSimpleName();
+			Table table2 = domain.getAnnotation(Table.class);
+			if (null == table2) {
+				this.schema = "spring";
+				this.name = domain.getSimpleName();
+				this.title = this.name;
+				init();
+				return;
+			}
+			this.schema = Strings.isNullOrEmpty(table2.schema()) ? "spring" : table2.schema();
+			this.name = Strings.isNullOrEmpty(table2.name()) ? domain.getSimpleName() : table2.name();
 			this.title = this.name;
 			init();
 			return;

@@ -83,20 +83,20 @@ public final class Exceptions extends RuntimeException {
 		return newInstance("Illegal argument: \"%s\"", name);
 	}
 
-	public static Exceptions newIllegalArgumentException(String name, String functionSource) {
-		return newInstance("[%s]Illegal argument: \"%s\"", functionSource, name);
+	public static Exceptions newIllegalArgumentException(String name, String value) {
+		return newInstance("Illegal argument: [" + name + "]" + value);
 	}
 
-	public static Exceptions newIllegalArgumentException(String name, String functionSource, String value) {
-		return newInstance("[%s]Illegal argument: \"%s\", %s", functionSource, name, value);
+	public static Exceptions newIllegalArgumentException(String name, String value, String reason) {
+		return newInstance("Illegal argument, " + reason + ": [" + name + "]" + value);
 	}
 
 	public static Exceptions newNullArgumentException(String name) {
-		return newInstance("Argument can't be null or empty: \"%s\"", name);
+		return newInstance("Argument can't be null or empty: [" + name + "]");
 	}
 
-	public static Exceptions newNullArgumentException(String name, String functionSource) {
-		return newInstance("[%s]Argument can't be null or empty: \"%s\"", functionSource, name);
+	public static Exceptions newNullArgumentException(String name, String reason) {
+		return newInstance("Argument can't be null or empty, " + reason + ": [" + name + "]");
 	}
 
 	public static Exceptions newIllegalConfigException(String name) {

@@ -8,7 +8,9 @@ import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.stereotype.Service;
 
+@Service
 public class SecurityDecisionManager implements AccessDecisionManager {
 
 	public void decide(Authentication authentication, Object object, Collection<ConfigAttribute> configAttributes)
@@ -20,7 +22,7 @@ public class SecurityDecisionManager implements AccessDecisionManager {
 				}
 			}
 		}
-		throw new AccessDeniedException("Access denied");
+		throw new AccessDeniedException("");
 	}
 
 	public boolean supports(ConfigAttribute attribute) {

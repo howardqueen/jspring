@@ -4,6 +4,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.jspring.Exceptions;
+import com.jspring.Strings;
+import com.jspring.persistence.JColumnValue;
+import com.jspring.persistence.JTableValue;
 
 public class OrderBy {
 
@@ -63,11 +66,20 @@ public class OrderBy {
 		this.fieldName = column.getFieldName();
 	}
 
-	private OrderBy(String serializedValue) {
-		String[] t = serializedValue.split(",");
-		this.fieldName = t[0];
-		this.operator = t[1];
-		return;
+	private OrderBy(String sorts) {
+		int i = sorts.indexOf(',');
+		if (i <= 0) {
+			throw Exceptions.newIllegalArgumentException("OrderBy", sorts);
+		}
+		this.fieldName = sorts.substring(0, i);
+		this.operator = sorts.substring(i + 1).toUpperCase();
+		if (Strings.isNullOrEmpty(operator)) {
+			operator = "ASC";
+			return;
+		}
+		if (!operator.equals("ASC") || !operator.equals("DESC")) {
+			throw Exceptions.newIllegalArgumentException("OrderBy.operator", sorts, "should be \"ASC\" or \"DESC\"");
+		}
 	}
 
 	@Override
@@ -76,8 +88,10 @@ public class OrderBy {
 	}
 
 	public void append(StringBuilder sql, JTableValue table) {
+		JColumnValue jv = table.getColumnByFieldName(fieldName);
+		sql.append(jv.getSQLColumnPre());
 		sql.append('`');
-		sql.append(table.getColumnByFieldName(fieldName).getColumnName());
+		sql.append(jv.getColumnName());
 		sql.append('`');
 		sql.append(" ");
 		sql.append(this.operator);

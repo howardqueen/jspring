@@ -37,7 +37,7 @@ public class SimpleErrorController extends AbstractErrorController {
 			response.setContentType(ContentTypes.html.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
 			log.error("[HTML:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
-					+ body.get("error") + "]\r\n" + body.get("message"));
+					+ body.get("error") + "]" + body.get("message"));
 			WebConfig.setResponse4IframeAndRest(response);
 			PrintWriter writer = response.getWriter();
 			writer.write("<html>\r\n<head>\r\n<meta charset=\"UTF-8\" />\r\n");
@@ -73,7 +73,7 @@ public class SimpleErrorController extends AbstractErrorController {
 			response.setContentType(ContentTypes.js.value);
 			Map<String, Object> body = getErrorAttributes(request, getTraceParameter(request));
 			log.error("[JSON:" + request.getMethod() + ":" + body.get("path") + "][" + body.get("status") + "]["
-					+ body.get("error") + "]\r\n" + body.get("message"));
+					+ body.get("error") + "]" + body.get("message"));
 			RestResult r = new RestResult();
 			r.path = String.valueOf(body.get("path"));
 			r.status = (Integer) body.get("status");
@@ -83,7 +83,7 @@ public class SimpleErrorController extends AbstractErrorController {
 				r.message = r.message.substring(0, 100) + "...";
 			}
 			return r;
-		}, response);
+		}, request, response);
 	}
 
 }

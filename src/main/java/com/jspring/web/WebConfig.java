@@ -52,7 +52,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		return new SimpleErrorController(errorAttributes);
 	}
 
-	private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
+	private static final Logger log = LoggerFactory.getLogger(WebConfig.class.getSimpleName());
 
 	/**
 	 * 允许IFRAME嵌套以及PUT/DELETE
@@ -99,9 +99,8 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 				"attachment; filename=" + URLEncoder.encode(filename + ".csv", Encodings.UTF8.value));
 	}
 
-	public static String redirect(Supplier<String> templatePathSupplier, HttpServletRequest request,
+	public static String responseTemplate(String templatePath, HttpServletRequest request,
 			HttpServletResponse response) {
-		String templatePath = templatePathSupplier.get();
 		setResponse4IframeAndRest(response);
 		log.info("[HTML:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
 		return templatePath;
@@ -127,6 +126,23 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		}
 	}
 
+	public static <R> R responseBody(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
+			HttpServletRequest request, HttpServletResponse response) {
+		try {
+			R r = contentSupplier.get();
+			log.info("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
+			setResponse4IframeAndRest(response);
+			return r;
+		} catch (Exception e) {
+			String message = Exceptions.getStackTrace(e);
+			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500]" + message);
+			R r = errorFunction.apply(e.getClass().getName(), (Strings.isNullOrEmpty(message) ? null
+					: (message.length() > 100 ? message.substring(0, 100) + "..." : message)));
+			setResponse4IframeAndRest(response);
+			return r;
+		}
+	}
+
 	public static <R> R responseBodyWithoutLog(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
 			HttpServletResponse response) {
 		try {
@@ -134,29 +150,43 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			setResponse4IframeAndRest(response);
 			return r;
 		} catch (Exception e) {
-			R r = errorFunction.apply(e.getClass().getName(), Exceptions.newInstance(e).getMessage());
+			String message = Exceptions.getStackTrace(e);
+			R r = errorFunction.apply(e.getClass().getName(), (Strings.isNullOrEmpty(message) ? null
+					: (message.length() > 100 ? message.substring(0, 100) + "..." : message)));
 			setResponse4IframeAndRest(response);
 			return r;
 		}
 	}
 
-	public static <R> R responseBody(Supplier<R> contentSupplier, BiFunction<String, String, R> errorFunction,
-			HttpServletRequest request, HttpServletResponse response) {
-		try {
-			R r = contentSupplier.get();
-			setResponse4IframeAndRest(response);
-			log.info("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][200][SUCC]");
+	public static Object responseObject(Supplier<Object> contentSupplier, HttpServletRequest request,
+			HttpServletResponse response) {
+		return responseBody(() -> {
+			return contentSupplier.get();
+		}, (name, message) -> {
+			RestResult r = new RestResult();
+			r.status = 500;
+			r.path = request.getRequestURI();
+			r.error = name;
+			r.message = message;
 			return r;
-		} catch (Exception er) {
-			Exceptions e = Exceptions.newInstance(er);
-			R r = errorFunction.apply(er.getClass().getName(), e.getMessage());
-			setResponse4IframeAndRest(response);
-			log.warn("[JSON:" + request.getMethod() + ":" + request.getRequestURI() + "][500]" + e.getMessage());
-			return r;
-		}
+		}, request, response);
 	}
 
-	public static RestResult responseBody(Supplier<RestResult> contentSupplier, HttpServletRequest request,
+	public static Object responseObjectWithoutLog(Supplier<Object> contentSupplier, HttpServletRequest request,
+			HttpServletResponse response) {
+		return responseBodyWithoutLog(() -> {
+			return contentSupplier.get();
+		}, (name, message) -> {
+			RestResult r = new RestResult();
+			r.status = 500;
+			r.path = request.getRequestURI();
+			r.error = name;
+			r.message = message;
+			return r;
+		}, response);
+	}
+
+	public static RestResult responseRestResult(Supplier<RestResult> contentSupplier, HttpServletRequest request,
 			HttpServletResponse response) {
 		return responseBody(() -> {
 			RestResult r = contentSupplier.get();
@@ -167,13 +197,12 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.status = 500;
 			r.path = request.getRequestURI();
 			r.error = name;
-			r.message = Strings.isNullOrEmpty(message) ? null
-					: (message.length() > 100 ? message.substring(0, 100) + "..." : message);
+			r.message = message;
 			return r;
 		}, request, response);
 	}
 
-	public static RestResult responseObject(Supplier<Object> contentSupplier, HttpServletRequest request,
+	public static RestResult responseRestObject(Supplier<Object> contentSupplier, HttpServletRequest request,
 			HttpServletResponse response) {
 		return responseBody(() -> {
 			RestResult r = new RestResult();
@@ -186,19 +215,9 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 			r.status = 500;
 			r.path = request.getRequestURI();
 			r.error = name;
-			r.message = Strings.isNullOrEmpty(message) ? null
-					: (message.length() > 100 ? message.substring(0, 100) + "..." : message);
+			r.message = message;
 			return r;
 		}, request, response);
-	}
-
-	public static Object responseObjectWithoutLog(Supplier<Object> contentSupplier, HttpServletResponse response) {
-		return responseBodyWithoutLog(() -> {
-			return contentSupplier.get();
-		}, (name, message) -> {
-			return name + "," + (Strings.isNullOrEmpty(message) ? null
-					: (message.length() > 100 ? message.substring(0, 100) + "..." : message));
-		}, response);
 	}
 
 }

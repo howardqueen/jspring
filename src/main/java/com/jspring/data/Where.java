@@ -7,6 +7,8 @@ import java.util.stream.Stream;
 
 import com.jspring.Exceptions;
 import com.jspring.Strings;
+import com.jspring.persistence.JColumnValue;
+import com.jspring.persistence.JTableValue;
 
 public class Where {
 
@@ -21,6 +23,13 @@ public class Where {
 		return new Where(column);
 	}
 
+	public static String serialized(List<Where> wheres) {
+		return wheres.stream()//
+				.map(a -> a.toString())//
+				.reduce((a, b) -> a + ";" + b)//
+				.orElseThrow(() -> Exceptions.newIllegalArgumentException("wheres"));
+	}
+
 	public static String serialized(Where[] wheres) {
 		return Stream.of(wheres)//
 				.map(a -> a.toString())//
@@ -33,6 +42,12 @@ public class Where {
 				.map(a -> new Where(a))//
 				.collect(Collectors.toList())//
 				.toArray(new Where[0]);
+	}
+
+	public static List<Where> deserializeList(String serializedValue) {
+		return Stream.of(serializedValue.split(";"))//
+				.map(a -> new Where(a))//
+				.collect(Collectors.toList());//
 	}
 
 	public static void appendTo(StringBuilder sql, List<Object> args, JTableValue table, Where... wheres) {
@@ -67,28 +82,56 @@ public class Where {
 		this.fieldName = column.getFieldName();
 	}
 
-	private Where(String serializedValue) {
-		int i = serializedValue.indexOf('(');
-		int j = serializedValue.lastIndexOf(')');
+	private Where(String wheres) {
+		int i = wheres.indexOf(',');
+		if (i <= 0) {
+			throw Exceptions.newIllegalArgumentException("Where", wheres);
+		}
+		this.fieldName = wheres.substring(0, i);
+		int j = wheres.indexOf(',', i + 1);
 		//
-		this.func = serializedValue.substring(0, i);
-		switch (func.toLowerCase()) {
-		case "gr":
+		this.func = j < 0 ? wheres.substring(i).toLowerCase() : wheres.substring(i, j).toLowerCase();
+		switch (func) {
+		case "gt":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.value", wheres);
+			}
+			this.value = wheres.substring(j + 1);
 			this.operator = ">";
 			break;
 		case "ge":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.value", wheres);
+			}
+			this.value = wheres.substring(j + 1);
 			this.operator = ">=";
 			break;
 		case "eq":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.value", wheres);
+			}
+			this.value = wheres.substring(j + 1);
 			this.operator = "=";
 			break;
 		case "ne":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.value", wheres);
+			}
+			this.value = wheres.substring(j + 1);
 			this.operator = "!=";
 			break;
 		case "se":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.value", wheres);
+			}
+			this.value = wheres.substring(j + 1);
 			this.operator = "<=";
 			break;
 		case "sm":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.value", wheres);
+			}
+			this.value = wheres.substring(j + 1);
 			this.operator = "<";
 			break;
 		case "nu":
@@ -98,50 +141,45 @@ public class Where {
 			this.operator = "NOT NULL";
 			break;
 		case "bt":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.values", wheres);
+			}
+			this.values = wheres.substring(j + 1).split(",");
+			if (this.values.length != 2) {
+				throw Exceptions.newIllegalArgumentException("Where.values", wheres, "length should be two");
+			}
 			this.operator = "BTWEEN";
 			break;
 		case "in":
+			if (j < 0) {
+				throw Exceptions.newNullArgumentException("Where.values", wheres);
+			}
+			this.values = wheres.substring(j + 1).split(",");
 			this.operator = "IN";
 			break;
 		default:
-			throw Exceptions.newInstance("Unknown where func: " + func);
-		}
-		String[] t = serializedValue.substring(i + 1, j).split(",");
-		if (null == t || t.length == 0) {
-			throw Exceptions.newInstance("Unknown where column: " + serializedValue);
-		}
-		this.fieldName = t[0];
-		if (t.length == 1) {
-			return;
-		}
-		if (t.length == 2) {
-			this.value = t[1];
-			return;
-		}
-		this.values = new Object[t.length - 1];
-		for (i = 1; i < t.length; i++) {
-			this.values[i - 1] = t[i];
+			throw Exceptions.newIllegalArgumentException("Where.func", wheres);
 		}
 	}
 
 	@Override
 	public String toString() {
 		if (null != value) {
-			return func + "(" + this.fieldName + "," + value + ")";
+			return fieldName + "," + func + "," + value;
 		}
 		if (null != values) {
-			return func + "(" + this.fieldName + "," + Strings.join(",", values) + ")";
+			return fieldName + "," + func + "," + Strings.join(",", values);
 		}
-		return func + "(" + this.fieldName + ")";
+		return fieldName + "," + func;
 	}
 
 	public void append(JTableValue table, StringBuilder sql, List<Object> args) {
+		JColumnValue jv = table.getColumnByFieldName(fieldName);
+		sql.append(jv.getSQLColumnPre());
 		sql.append('`');
-		sql.append(table.getColumnByFieldName(fieldName).getColumnName());
+		sql.append(jv.getColumnName());
 		sql.append('`');
-		sql.append(' ');
 		sql.append(this.operator);
-		sql.append(' ');
 		if (null != value) {
 			sql.append('?');
 			args.add(value);
@@ -167,7 +205,7 @@ public class Where {
 
 	public Where greaterThan(Object value) {
 		this.operator = ">";
-		this.func = "gr";
+		this.func = "gt";
 		this.value = value;
 		this.values = null;
 		return this;

@@ -6,168 +6,129 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
-import com.jspring.security.service.SecurityDecisionManager;
+import com.jspring.security.defaults.SecurityUserService;
+import com.jspring.security.domain.ISecurityUserDetails;
+import com.jspring.security.service.ISecurityResourceService;
+import com.jspring.security.service.ISecurityUserService;
 import com.jspring.security.service.SecurityFilter;
-import com.jspring.security.service.SecurityResourceService;
-import com.jspring.security.service.SecurityUserService;
+import com.jspring.security.service.BlackSecurityResourceService;
+import com.jspring.security.service.WhiteSecurityResourceService;
+import com.jspring.Exceptions;
 import com.jspring.Strings;
-import com.jspring.data.CrudRepository;
 import com.jspring.data.SqlExecutor;
-import com.jspring.security.domain.*;
 
 @Configuration
 @EnableWebSecurity
-@ComponentScan(value = { "com.jspring.data", "com.jspring.security.web" })
+@ComponentScan(value = { "com.jspring.data", "com.jspring.security.service", "com.jspring.security.web" })
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-	//////////////////////////////////////////////////
-	///
-	//////////////////////////////////////////////////
-	private SecurityFilter _securityFilter;
+	private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class.getSimpleName());
 
-	protected SecurityFilter getSecurityFilter() {
-		if (null == _securityFilter) {
-			_securityFilter = new SecurityFilter(new SecurityDecisionManager(),
-					(SecurityResourceService) this.getApplicationContext().getBean("securityResourceService"));
-		}
-		return _securityFilter;
-	}
+	@Autowired
+	private Environment environment;
+	@Autowired
+	private SecurityFilter securityFilter;
 
-	private UserDetailsService _securityUserService;
-
-	protected UserDetailsService getSecurityUserService() {
-		if (null == _securityUserService) {
-			_securityUserService = new SecurityUserService(
-					(SecurityUserRepository<?>) this.getApplicationContext().getBean("securityUserRepository"));
-		}
-		return _securityUserService;
-	}
-
-	//////////////////////////////////////////////////
-	/// 登录页设置
-	//////////////////////////////////////////////////
-	public static final String[] SKIP_URLS = { "/favicon.ico", "/easyui/**", "/js/**", "/css/**" };
+	private SimpleUrlAuthenticationSuccessHandler handler = new SimpleUrlAuthenticationSuccessHandler();
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.authorizeRequests()
-				// 允许静态资源访问
-				.antMatchers(SKIP_URLS).permitAll()
-				// 开启其它资源授权
-				.anyRequest().authenticated()
-				// 设置登陆地址
-				.and().formLogin().loginPage("/login").permitAll()
-				// 设置登出地址
-				.and().logout().permitAll()
-				// 加入自定义过滤器
-				.and().addFilterAfter(getSecurityFilter(), FilterSecurityInterceptor.class)
-				// 暂停防CSRF攻击
-				.csrf().disable()
-				// 允许在IFRAME中嵌入展示
-				.headers().frameOptions().disable();
+		log.info(">> configure ...");
+		String t = environment.getProperty("security.white.urls");
+		if (!Strings.isNullOrEmpty(t)) {
+			log.info(">> security.white.urls: " + t);
+			http.authorizeRequests()
+					// 开启授权
+					.anyRequest().authenticated()
+					// 允许访问
+					.antMatchers(t.split(",")).permitAll()
+					// 设置登陆地址
+					.and().formLogin().loginPage("/login").successHandler((request, response, authentication) -> {
+						ISecurityUserService securityUserService = getApplicationContext()
+								.getBean(ISecurityUserService.class);
+						securityUserService
+								.loginSuccess(((ISecurityUserDetails) authentication.getPrincipal()).getUserId());
+						handler.onAuthenticationSuccess(request, response, authentication);
+					}).permitAll()
+					// 设置登出地址
+					.and().logout().permitAll()
+					// 加入自定义过滤器
+					.and().addFilterAfter(securityFilter, FilterSecurityInterceptor.class)
+					// 暂停防CSRF攻击
+					.csrf().disable()
+					// 允许在IFRAME中嵌入展示
+					.headers().frameOptions().disable();
+			return;
+		}
+		t = environment.getProperty("security.black.urls");
+		if (!Strings.isNullOrEmpty(t)) {
+			log.info(">> security.black.urls: " + t);
+			http.authorizeRequests()
+					// 允许访问
+					.anyRequest().permitAll()
+					// 开启授权
+					.antMatchers(t.split(",")).authenticated()
+					// 设置登陆地址
+					.and().formLogin().loginPage("/login").successHandler((request, response, authentication) -> {
+						ISecurityUserService securityUserService = getApplicationContext()
+								.getBean(ISecurityUserService.class);
+						securityUserService
+								.loginSuccess(((ISecurityUserDetails) authentication.getPrincipal()).getUserId());
+						handler.onAuthenticationSuccess(request, response, authentication);
+					}).permitAll()
+					// 设置登出地址
+					.and().logout().permitAll()
+					// 加入自定义过滤器
+					.and().addFilterAfter(securityFilter, FilterSecurityInterceptor.class)
+					// 暂停防CSRF攻击
+					.csrf().disable()
+					// 允许在IFRAME中嵌入展示
+					.headers().frameOptions().disable();
+			return;
+		}
+		throw Exceptions.newInstance(
+				"[Properties]security.white.urls and [Properties]security.black.urls should be valued at least one");
 	}
 
-	//////////////////////////////////////////////////
-	/// 密码加盐处理
-	//////////////////////////////////////////////////
-	private static final String PASSWORD_SITE_WIDE_SECRET = "dc3949ba59abbe56e057f20f";// 盐值
-	public static final String PASSWORD_123456 = "e10adc3949ba59abbe56e057f20f883e";
-
-	protected static final class MyPasswordEncoder implements PasswordEncoder {
-		private static final Logger log = LoggerFactory.getLogger(MyPasswordEncoder.class);
-		private final PasswordEncoder encoder = new StandardPasswordEncoder(PASSWORD_SITE_WIDE_SECRET);
-
-		public String encode(CharSequence pwd) {
-			if (pwd.toString() == PASSWORD_123456) {// 初始密码123456
-				return pwd.toString();
-			}
-			return encoder.encode(pwd);
-		}
-
-		public boolean matches(CharSequence pwd1, String pwd2) {
-			try {
-				if (pwd1.length() == 0 || Strings.isNullOrEmpty(pwd2)) {
-					return false;
-				}
-				if (pwd1.toString().equals(PASSWORD_123456) && pwd2.equals(PASSWORD_123456)) {// 123456
-					return true;
-				}
-				return encoder.matches(pwd1, pwd2);
-			} catch (Exception e) {
-				log.error(e.getClass().getName() + ":" + e.getMessage() + "\r\n" + pwd1 + "<=>" + pwd2);
-				return false;
-			}
-		}
-
-	}
-
-	public static final PasswordEncoder PASSWORD_ENCODER = new MyPasswordEncoder();
-
-	//////////////////////////////////////////////////
-	/// 密码验证
-	//////////////////////////////////////////////////
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(getSecurityUserService()).passwordEncoder(PASSWORD_ENCODER);
+		ISecurityUserService securityUserService = getApplicationContext().getBean(ISecurityUserService.class);
+		auth.userDetailsService(securityUserService).passwordEncoder(securityUserService.getPasswordEncoder());
 	}
 
 	//////////////////////////////////////////////////
-	/// REPOSITORY BEANS
+	///
 	//////////////////////////////////////////////////
 	@Autowired
 	protected SqlExecutor sqlExecutor;
 
 	@Bean
-	public SecurityUserRepository<? extends SecurityUser> securityUserRepository() {
-		return new SecurityUserRepository<SecurityUser>(sqlExecutor, SecurityUser.class);
+	public ISecurityResourceService securityResourceService() {
+		String t = environment.getProperty("security.white.urls");
+		if (!Strings.isNullOrEmpty(t)) {
+			log.info(">> security.white.urls: " + t);
+			return new BlackSecurityResourceService(sqlExecutor, t.split(","));
+		}
+		t = environment.getProperty("security.black.urls");
+		if (!Strings.isNullOrEmpty(t)) {
+			log.info(">> security.black.urls: " + t);
+			return new WhiteSecurityResourceService(sqlExecutor, t.split(","));
+		}
+		throw Exceptions.newInstance(
+				"[Properties]security.white.urls and [Properties]security.black.urls should be valued at least one");
 	}
 
 	@Bean
-	public CrudRepository<SecurityUserRole, Integer> securityUserRoleRepository() {
-		return new CrudRepository<>(sqlExecutor, SecurityUserRole.class);
-	}
-
-	@Bean
-	public CrudRepository<SecurityRole, Integer> securityRoleRepository() {
-		return new CrudRepository<>(sqlExecutor, SecurityRole.class);
-	}
-
-	@Bean
-	public CrudRepository<SecurityRoleMenu, Integer> securityRoleMenuRepository() {
-		return new CrudRepository<>(sqlExecutor, SecurityRoleMenu.class);
-	}
-
-	@Bean
-	public CrudRepository<SecurityMenu, Integer> securityMenuRepository() {
-		return new CrudRepository<>(sqlExecutor, SecurityMenu.class);
-	}
-
-	@Bean
-	public CrudRepository<SecurityMenuResource, Integer> securityMenuResourceRepository() {
-		return new CrudRepository<>(sqlExecutor, SecurityMenuResource.class);
-	}
-
-	@Bean
-	public CrudRepository<SecurityResource, Integer> securityResourceRepository() {
-		return new CrudRepository<>(sqlExecutor, SecurityResource.class);
-	}
-
-	@SuppressWarnings({ "unchecked" })
-	@Bean
-	public SecurityResourceService securityResourceService() {
-		return new SecurityResourceService(
-				(SecurityUserRepository<?>) this.getApplicationContext().getBean("securityUserRepository"),
-				(CrudRepository<SecurityResource, Integer>) this.getApplicationContext()
-						.getBean("securityResourceRepository"));
+	public ISecurityUserService securityUserService() {
+		return new SecurityUserService(sqlExecutor);
 	}
 
 }

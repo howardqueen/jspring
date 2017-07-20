@@ -20,23 +20,23 @@ public final class JsonSerializer {
 	private static final Gson gson = new GsonBuilder().registerTypeAdapter(DateTime.class, new DateTimeAdapter())
 			.create();
 
-	public static String serializeNonGeneric(Object t) {
+	public static String serializeNoneGeneric(Object t) {
 		return gson.toJson(t);
 	}
 
-	public static <T> ISerializer<T> newNonGenericSerializer(Class<T> tClass) {
-		return new NonGeneric<T>(tClass);
+	public static <T> ISerializer<T> newNoneGenericSerializer(Class<T> tClass) {
+		return new NoneGeneric<T>(tClass);
 	}
 
 	public static <T> ISerializer<T> newGenericSerializer(TypeToken<T> tTypeToken) {
 		return new Generic<T>(tTypeToken.getType());
 	}
 
-	private static class NonGeneric<T> implements ISerializer<T> {
+	private static class NoneGeneric<T> implements ISerializer<T> {
 
 		private final Class<T> classOfT;
 
-		public NonGeneric(Class<T> classOfT) {
+		public NoneGeneric(Class<T> classOfT) {
 			this.classOfT = classOfT;
 		}
 

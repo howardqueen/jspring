@@ -8,6 +8,8 @@ import java.util.function.UnaryOperator;
 
 import com.jspring.Exceptions;
 import com.jspring.Strings;
+import com.jspring.persistence.JColumnValue;
+import com.jspring.persistence.JTableValue;
 
 public class SqlBuilder {
 
@@ -29,11 +31,11 @@ public class SqlBuilder {
 		return sql.toString();
 	}
 
-	public <R> R execute(Function<String, R> argsNullFunc, BiFunction<String, Object[], R> argsNotNullFunc) {
+	public <R> R execute(Function<String, R> argsNullExecutor, BiFunction<String, Object[], R> executor) {
 		if (args.isEmpty()) {
-			return argsNullFunc.apply(this.sql.toString());
+			return argsNullExecutor.apply(this.sql.toString());
 		}
-		return argsNotNullFunc.apply(this.sql.toString(), args.toArray(new Object[0]));
+		return executor.apply(this.sql.toString(), args.toArray(new Object[0]));
 	}
 
 	public <R> R executeArgsNotNull(BiFunction<String, Object[], R> argsNotNullFunc) {
@@ -62,9 +64,17 @@ public class SqlBuilder {
 		return this;
 	}
 
-	public SqlBuilder select(String expression) {
+	public SqlBuilder select(String... expressions) {
 		sql.append(" SELECT ");
-		sql.append(expression);
+		boolean isAppend = false;
+		for (String e : expressions) {
+			if (isAppend) {
+				sql.append(',');
+			} else {
+				isAppend = true;
+			}
+			sql.append(e);
+		}
 		sql.append(" FROM ");
 		sql.append(table.getSQLJoinedTables());
 		return this;
@@ -136,6 +146,31 @@ public class SqlBuilder {
 			// if (null == obj) {
 			// continue;
 			// }
+			if (isAppend) {
+				sql.append(',');
+			} else {
+				isAppend = true;
+			}
+			sql.append('`');
+			sql.append(column.getColumnName());
+			sql.append("`=");
+			sql.append('?');
+			args.add(obj);
+		}
+		return where(Where.of(primaryKey).equalWith(primaryKey.getValue(entity)));//
+	}
+	
+	public SqlBuilder setSkipNullWithKey(Object entity, JColumnValue primaryKey, JColumnValue... updateableColumns) {
+		if (null == updateableColumns || updateableColumns.length == 0) {
+			throw Exceptions.newInstance("SQL update columns is empty: " + sql.toString());
+		}
+		sql.append(" SET ");
+		boolean isAppend = false;
+		for (JColumnValue column : updateableColumns) {
+			Object obj = column.getValue(entity);
+			if (null == obj) {
+				continue;
+			}
 			if (isAppend) {
 				sql.append(',');
 			} else {

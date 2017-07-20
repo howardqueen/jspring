@@ -2,6 +2,7 @@ package com.jspring.data;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component;
 import com.jspring.Exceptions;
 import com.jspring.Strings;
 import com.jspring.collections.KeyValue;
+import com.jspring.persistence.JColumnTypes;
+import com.jspring.persistence.JColumnValue;
 
 @Component
 public final class SqlExecutor {
@@ -25,7 +28,7 @@ public final class SqlExecutor {
 	//////////////////
 	/// STATIC
 	//////////////////
-	protected static final Logger log = LoggerFactory.getLogger(SqlExecutor.class);
+	private final Logger log = LoggerFactory.getLogger(SqlExecutor.class.getSimpleName());
 
 	//////////////////
 	/// FIELDS
@@ -36,8 +39,8 @@ public final class SqlExecutor {
 	private JdbcTemplate _jdbcTemplate = null;
 	private List<KeyValue<String, JdbcTemplate>> _jdbcTemplates = new ArrayList<>();
 
-	private JdbcTemplate getJdbcTemplate(String schema) {
-		if (Strings.isNullOrEmpty(schema) || "spring".equals(schema)) {
+	private JdbcTemplate getJdbcTemplate(String database) {
+		if (Strings.isNullOrEmpty(database) || "spring".equals(database)) {
 			if (null == _jdbcTemplate) {
 				synchronized (this) {
 					if (null == _jdbcTemplate) {
@@ -49,29 +52,29 @@ public final class SqlExecutor {
 			return _jdbcTemplate;
 		}
 		for (KeyValue<String, JdbcTemplate> kv : _jdbcTemplates) {
-			if (kv.key.equals(schema)) {
+			if (kv.key.equals(database)) {
 				return kv.value;
 			}
 		}
 		synchronized (this) {
 			for (KeyValue<String, JdbcTemplate> kv : _jdbcTemplates) {
-				if (kv.key.equals(schema)) {
+				if (kv.key.equals(database)) {
 					return kv.value;
 				}
 			}
-			JdbcTemplate jt = buildJdbcTemplate(schema);
-			_jdbcTemplates.add(new KeyValue<>(schema, jt));
+			JdbcTemplate jt = buildJdbcTemplate(database);
+			_jdbcTemplates.add(new KeyValue<>(database, jt));
 			return jt;
 		}
 	}
 
-	private JdbcTemplate buildJdbcTemplate(String schema) {
-		String url = environment.getProperty(schema + ".datasource.url");
+	private JdbcTemplate buildJdbcTemplate(String database) {
+		String url = environment.getProperty(database + ".datasource.url");
 		if (Strings.isNullOrEmpty(url)) {
-			throw Exceptions.newNullArgumentException("[Properties]" + schema + ".datasource.url");
+			throw Exceptions.newNullArgumentException("[Properties]" + database + ".datasource.url");
 		}
-		String username = environment.getProperty(schema + ".datasource.username");
-		String password = environment.getProperty(schema + ".datasource.password");
+		String username = environment.getProperty(database + ".datasource.username");
+		String password = environment.getProperty(database + ".datasource.password");
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
 		dataSource.setDriverClassName("com.mysql.jdbc.Driver");
 		dataSource.setUrl(url);
@@ -173,52 +176,53 @@ public final class SqlExecutor {
 		};
 	}
 
-//	@SuppressWarnings("unchecked")
-//	public <T> T parseEntity(UnaryOperator<String> stringMap, JColumnValue[] columns) {
-//		try {
-//			Object domain = columns[0].tableData.domain.newInstance();
-//			p: for (JColumnValue column : columns) {
-//				String value = stringMap.apply(column.getFieldName());
-//				if (Strings.isNullOrEmpty(value)) {
-//					continue;
-//				}
-//				switch (column.type) {
-//				case String:
-//					column.field.set(domain, value);
-//					continue p;
-//				case Integer:
-//					column.field.set(domain, Strings.valueOfInt(value));
-//					continue p;
-//				case Long:
-//					column.field.set(domain, Strings.valueOfLong(value));
-//					continue p;
-//				case Short:
-//					column.field.set(domain, Strings.valueOfShort(value));
-//					continue p;
-//				case Double:
-//					column.field.set(domain, Strings.valueOfDouble(value));
-//					continue p;
-//				case Float:
-//					column.field.set(domain, Strings.valueOfFloat(value));
-//					continue p;
-//				case Boolean:
-//					column.field.set(domain, Strings.valueOfBool(value));
-//					continue p;
-//				case Date:
-//					column.field.set(domain, Strings.valueOfDateTime(value).getLocalDate());
-//					continue p;
-//				case DateTime:
-//					column.field.set(domain, Strings.valueOfDateTime(value).getLocalDate());
-//					continue p;
-//				default:
-//					continue p;
-//				}
-//			}
-//			return (T) domain;
-//		} catch (Exception e) {
-//			throw Exceptions.newInstance(e);
-//		}
-//	}
+	// @SuppressWarnings("unchecked")
+	// public <T> T parseEntity(UnaryOperator<String> stringMap, JColumnValue[]
+	// columns) {
+	// try {
+	// Object domain = columns[0].tableData.domain.newInstance();
+	// p: for (JColumnValue column : columns) {
+	// String value = stringMap.apply(column.getFieldName());
+	// if (Strings.isNullOrEmpty(value)) {
+	// continue;
+	// }
+	// switch (column.type) {
+	// case String:
+	// column.field.set(domain, value);
+	// continue p;
+	// case Integer:
+	// column.field.set(domain, Strings.valueOfInt(value));
+	// continue p;
+	// case Long:
+	// column.field.set(domain, Strings.valueOfLong(value));
+	// continue p;
+	// case Short:
+	// column.field.set(domain, Strings.valueOfShort(value));
+	// continue p;
+	// case Double:
+	// column.field.set(domain, Strings.valueOfDouble(value));
+	// continue p;
+	// case Float:
+	// column.field.set(domain, Strings.valueOfFloat(value));
+	// continue p;
+	// case Boolean:
+	// column.field.set(domain, Strings.valueOfBool(value));
+	// continue p;
+	// case Date:
+	// column.field.set(domain, Strings.valueOfDateTime(value).getLocalDate());
+	// continue p;
+	// case DateTime:
+	// column.field.set(domain, Strings.valueOfDateTime(value).getLocalDate());
+	// continue p;
+	// default:
+	// continue p;
+	// }
+	// }
+	// return (T) domain;
+	// } catch (Exception e) {
+	// throw Exceptions.newInstance(e);
+	// }
+	// }
 
 	//////////////////
 	/// EXECUTE
@@ -228,18 +232,18 @@ public final class SqlExecutor {
 	 * 获取实体列表
 	 * 
 	 */
-	public <E> List<E> queryEntities(String schema, JColumnValue[] columns, String sql, Object... args) {
-		log.debug("List<[Entity]" + columns[0].tableValue.domain.getSimpleName() + ">: " + sql);
-		return getJdbcTemplate(schema).query(sql, args, getRowMapper(columns));
+	public <E> Collection<E> queryEntities(String database, JColumnValue[] columns, String sql, Object... args) {
+		log.info("[Entities]" + columns[0].tableValue.domain.getSimpleName() + ": " + sql);
+		return getJdbcTemplate(database).query(sql, args, getRowMapper(columns));
 	}
 
 	/**
 	 * 获取首个实体
 	 */
-	public <E> E queryEntity(String schema, JColumnValue[] columns, String sql, Object... args) {
-		log.debug("[Entity]" + columns[0].tableValue.domain.getSimpleName() + ": " + sql);
+	public <E> E queryEntity(String database, JColumnValue[] columns, String sql, Object... args) {
+		log.info("[Entity]" + columns[0].tableValue.domain.getSimpleName() + ": " + sql);
 		try {
-			return getJdbcTemplate(schema).queryForObject(sql, args, getRowMapper(columns));
+			return getJdbcTemplate(database).queryForObject(sql, args, getRowMapper(columns));
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}
@@ -251,9 +255,9 @@ public final class SqlExecutor {
 	 * @param pojoClass
 	 *            不支持 @Table @Column 等
 	 */
-	public <J> List<J> queryPojos(String schema, Class<J> pojoClass, String sql, Object... args) {
-		log.debug("List<[Pojo]" + pojoClass.getSimpleName() + ">: " + sql);
-		return getJdbcTemplate(schema).query(sql, args, getRowMapper(pojoClass));
+	public <J> Collection<J> queryPojos(String database, Class<J> pojoClass, String sql, Object... args) {
+		log.info("[Pojos]" + pojoClass.getSimpleName() + ": " + sql);
+		return getJdbcTemplate(database).query(sql, args, getRowMapper(pojoClass));
 	}
 
 	/**
@@ -262,10 +266,10 @@ public final class SqlExecutor {
 	 * @param pojoClass
 	 *            不支持 @Table @Column 等
 	 */
-	public <J> J queryPojo(String schema, Class<J> pojoClass, String sql, Object... args) {
-		log.debug("[Pojo]" + pojoClass.getSimpleName() + ": " + sql);
+	public <J> J queryPojo(String database, Class<J> pojoClass, String sql, Object... args) {
+		log.info("[Pojo]" + pojoClass.getSimpleName() + ": " + sql);
 		try {
-			return getJdbcTemplate(schema).queryForObject(sql, args, getRowMapper(pojoClass));
+			return getJdbcTemplate(database).queryForObject(sql, args, getRowMapper(pojoClass));
 		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}
@@ -277,25 +281,25 @@ public final class SqlExecutor {
 	 * @param primitiveType
 	 */
 	@SuppressWarnings("unchecked")
-	public <P> List<P> queryPrimitives(String schema, Class<P> primitiveType, String sql, Object... args) {
-		log.debug("List<[Primitive]" + primitiveType.getSimpleName() + ">: " + sql);
+	public <P> Collection<P> queryPrimitives(String database, Class<P> primitiveType, String sql, Object... args) {
+		log.info("[Primitives]" + primitiveType.getSimpleName() + ": " + sql);
 		switch (primitiveType.getSimpleName()) {
 		case ("String"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) r.getString(1));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) r.getString(1));
 		case ("Integer"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) Integer.valueOf(r.getInt(1)));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) Integer.valueOf(r.getInt(1)));
 		case ("Long"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) Long.valueOf(r.getLong(1)));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) Long.valueOf(r.getLong(1)));
 		case ("Short"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) Short.valueOf(r.getShort(1)));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) Short.valueOf(r.getShort(1)));
 		case ("Double"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) Double.valueOf(r.getDouble(1)));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) Double.valueOf(r.getDouble(1)));
 		case ("Float"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) Float.valueOf(r.getFloat(1)));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) Float.valueOf(r.getFloat(1)));
 		case ("Boolean"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) Boolean.valueOf(r.getBoolean(1)));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) Boolean.valueOf(r.getBoolean(1)));
 		case ("Date"):
-			return getJdbcTemplate(schema).query(sql, args, (r, i) -> (P) r.getTimestamp(1));
+			return getJdbcTemplate(database).query(sql, args, (r, i) -> (P) r.getTimestamp(1));
 		default:
 			throw Exceptions.newInstance("Illegale [primitiveType]" + primitiveType.getSimpleName());
 		}
@@ -307,26 +311,26 @@ public final class SqlExecutor {
 	 * @param primitiveType
 	 */
 	@SuppressWarnings("unchecked")
-	public <P> P queryPrimitive(String schema, Class<P> primitiveType, String sql, Object... args) {
-		log.debug("[Primitive]" + primitiveType.getSimpleName() + ": " + sql);
+	public <P> P queryPrimitive(String database, Class<P> primitiveType, String sql, Object... args) {
+		log.info("[Primitive]" + primitiveType.getSimpleName() + ": " + sql);
 		try {
 			switch (primitiveType.getSimpleName()) {
 			case ("String"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, String.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, String.class);
 			case ("Integer"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Integer.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Integer.class);
 			case ("Long"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Long.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Long.class);
 			case ("Short"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Short.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Short.class);
 			case ("Double"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Double.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Double.class);
 			case ("Float"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Float.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Float.class);
 			case ("Boolean"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Boolean.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Boolean.class);
 			case ("Date"):
-				return (P) getJdbcTemplate(schema).queryForObject(sql, args, Date.class);
+				return (P) getJdbcTemplate(database).queryForObject(sql, args, Date.class);
 			default:
 				throw Exceptions.newInstance("Illegale [primitiveType]" + primitiveType.getSimpleName());
 			}
@@ -339,9 +343,9 @@ public final class SqlExecutor {
 	 * 执行并返回影响行数
 	 * 
 	 */
-	public int executeNoneQuery(String schema, String sql, Object... args) {
-		log.debug("executeNoneQuery: " + sql.replaceAll("\n", "\\n").replaceAll("\r", "\\r"));
-		return getJdbcTemplate(schema).update(sql, args);
+	public int executeNoneQuery(String database, String sql, Object... args) {
+		log.info("executeNoneQuery: " + sql.replaceAll("\n", "\\n").replaceAll("\r", "\\r"));
+		return getJdbcTemplate(database).update(sql, args);
 	}
 
 }

@@ -85,7 +85,10 @@ public abstract class BaseSecurityUserService implements ISecurityUserService {
 	@Override
 	public Collection<? extends SecurityMenu> loadMenusByUserId(Integer userId) {
 		return menuRepository.findAllList(1, 100, //
-				OrderBy.of(SecurityMenuByUser.Columns.orderWeight).desc(), //
+				new OrderBy[] { //
+						OrderBy.of(SecurityMenuByUser.Columns.orderWeight).desc(), //
+						OrderBy.of(SecurityMenuByUser.Columns.menuId).asc()//
+				}, //
 				Where.of(SecurityMenuByUser.Columns.userId).equalWith(userId),
 				Where.of(SecurityMenuByUser.Columns.parentId).greaterEqual(Integer.valueOf(0)));
 	}
